@@ -1,0 +1,103 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and subscription data",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string" },
+        "role": { "type": "string", "enum": ["user", "admin"] },
+        "subscription_plan": { "type": "string" },
+        "subscription_status": { "type": "string", "enum": ["active", "pending", "rejected", "none"] },
+        "country": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["uid", "email", "role"]
+    },
+    "Anime": {
+      "title": "Anime",
+      "description": "Anime series details",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "genre": { "type": "string" },
+        "posterUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["title", "description", "posterUrl"]
+    },
+    "Episode": {
+      "title": "Episode",
+      "description": "Individual anime episodes",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "animeId": { "type": "string" },
+        "title": { "type": "string" },
+        "videoUrl": { "type": "string" },
+        "accessType": { "type": "string", "enum": ["free", "premium", "locked"] },
+        "order": { "type": "number" }
+      },
+      "required": ["animeId", "title", "videoUrl", "accessType"]
+    },
+    "Plan": {
+      "title": "Plan",
+      "description": "Subscription plans",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "price": { "type": "number" },
+        "duration": { "type": "string" },
+        "benefits": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["name", "price", "duration"]
+    },
+    "PurchaseRequest": {
+      "title": "PurchaseRequest",
+      "description": "User requests for premium plans",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userEmail": { "type": "string" },
+        "planId": { "type": "string" },
+        "planName": { "type": "string" },
+        "amount": { "type": "string" },
+        "currency": { "type": "string" },
+        "country": { "type": "string" },
+        "transactionId": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "approved", "rejected"] },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "planId", "status", "transactionId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/anime/{animeId}": {
+      "schema": "Anime",
+      "description": "Anime series"
+    },
+    "/anime/{animeId}/episodes/{episodeId}": {
+      "schema": "Episode",
+      "description": "Episodes for a specific anime"
+    },
+    "/plans/{planId}": {
+      "schema": "Plan",
+      "description": "Available subscription plans"
+    },
+    "/purchaseRequests/{requestId}": {
+      "schema": "PurchaseRequest",
+      "description": "User purchase requests"
+    }
+  }
+}
