@@ -108,7 +108,7 @@ export const Premium: React.FC = () => {
           Choose Your <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-blue-300">Power</span>
         </h1>
         <p className="text-zinc-400 text-sm lg:text-base font-medium leading-relaxed">
-          Unlock the full potential of Shahid X Rex. Ad-free, Ultra HD, and exclusive anime content.
+          Unlock the full potential of sahidanime. Ad-free, Ultra HD, and exclusive anime content.
         </p>
       </div>
 

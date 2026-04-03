@@ -41,7 +41,7 @@ export const Dashboard: React.FC = () => {
   }
 
   const featured = featuredAnimes[currentBannerIndex] || {
-    title: "Welcome to Shahid X Rex",
+    title: "Welcome to sahidanime",
     description: "Discover the latest and greatest anime series here.",
     posterUrl: "https://picsum.photos/seed/anime-hero/1920/1080"
   };

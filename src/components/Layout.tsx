@@ -42,7 +42,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { name: 'Profile', icon: User, path: '/profile' },
   ];
 
-  const isAdminUser = userData?.role === 'admin' || user?.email === 'mrkhatab112@gmail.com';
+  const isAdminUser = userData?.role === 'admin' || user?.email === 'mrkhatab112@gmail.com' || user?.email === 'admin@rex.com';
 
   if (isAdminUser) {
     navItems.push({ name: 'Admin Panel', icon: LayoutDashboard, path: '/admin' });
@@ -63,13 +63,13 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         <div className="h-full flex flex-col p-4">
           <Link to="/" className="flex items-center gap-3 mb-8 group">
             <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-blue-500/20 group-hover:scale-110 transition-transform">
-              <span className="text-lg font-bold italic text-white">X</span>
+              <span className="text-lg font-bold italic text-white">S</span>
             </div>
             <span className={cn(
               "text-lg font-bold tracking-tight bg-clip-text text-transparent bg-gradient-to-r",
               theme === 'dark' ? "from-white to-zinc-400" : "from-zinc-900 to-zinc-600"
             )}>
-              Shahid X Rex
+              sahidanime
             </span>
           </Link>
 

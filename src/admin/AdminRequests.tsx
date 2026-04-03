@@ -31,7 +31,7 @@ export const AdminRequests: React.FC = () => {
   const [viewingScreenshot, setViewingScreenshot] = useState<string | null>(null);
 
   useEffect(() => {
-    const isAdmin = userData?.role === 'admin' || user?.email === 'mrkhatab112@gmail.com';
+    const isAdmin = userData?.role === 'admin' || user?.email === 'mrkhatab112@gmail.com' || user?.email === 'admin@rex.com';
     if (!isAdmin) {
       if (!loading) setLoading(false);
       return;

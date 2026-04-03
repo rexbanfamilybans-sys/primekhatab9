@@ -30,7 +30,7 @@ export const AdminDashboard: React.FC = () => {
   });
 
   useEffect(() => {
-    const isAdmin = userData?.role === 'admin' || user?.email === 'mrkhatab112@gmail.com';
+    const isAdmin = userData?.role === 'admin' || user?.email === 'mrkhatab112@gmail.com' || user?.email === 'admin@rex.com';
     if (!isAdmin) return;
 
     const fetchData = async () => {

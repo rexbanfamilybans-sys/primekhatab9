@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   signInWithEmailAndPassword, 
@@ -14,10 +14,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 const COUNTRIES = ['India', 'Pakistan', 'Bangladesh', 'Other'];
 
+const BACKGROUND_IMAGES = [
+  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRh42_6VZ-3svZWN8VOBQbLQHHdqfTgLnCXc3O3ikja7adL2rzhnEszfXY&s=10",
+  "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTXrFAEx_5TZ9gp_GZOvJqKqpnqNVAaNEKed6t9W0-oFA&s=10"
+];
+
 export const Login: React.FC = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -25,6 +31,13 @@ export const Login: React.FC = () => {
     country: 'India'
   });
   const navigate = useNavigate();
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentImageIndex((prev) => (prev + 1) % BACKGROUND_IMAGES.length);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
@@ -91,13 +104,20 @@ export const Login: React.FC = () => {
     <div className="min-h-screen bg-black flex items-center justify-center p-4 relative overflow-hidden italic">
       {/* Anime Background Image with Overlay */}
       <div className="absolute inset-0 z-0">
-        <img 
-          src="https://images.unsplash.com/photo-1578632292335-df3abbb0d586?q=80&w=1920&auto=format&fit=crop" 
-          alt="Anime Background"
-          className="w-full h-full object-cover opacity-30 scale-110 blur-[2px]"
-          referrerPolicy="no-referrer"
-        />
-        <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/80 to-black" />
+        <AnimatePresence mode="wait">
+          <motion.img 
+            key={currentImageIndex}
+            src={BACKGROUND_IMAGES[currentImageIndex]} 
+            alt="Anime Background"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.5 }}
+            className="w-full h-full object-cover opacity-60 scale-100"
+            referrerPolicy="no-referrer"
+          />
+        </AnimatePresence>
+        <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-black/60 to-black" />
       </div>
 
       {/* Dynamic Background Elements */}
@@ -118,10 +138,10 @@ export const Login: React.FC = () => {
             className="inline-flex items-center gap-3 mb-6"
           >
             <div className="w-14 h-14 bg-gradient-to-br from-blue-500 to-purple-600 rounded-2xl flex items-center justify-center shadow-2xl shadow-blue-500/20">
-              <span className="text-3xl font-black italic text-white">X</span>
+              <span className="text-3xl font-black italic text-white">S</span>
             </div>
             <div className="text-left">
-              <h2 className="text-2xl font-black tracking-tighter text-white leading-none">SHAHID X REX</h2>
+              <h2 className="text-2xl font-black tracking-tighter text-white leading-none">SAHIDANIME</h2>
               <p className="text-blue-500 text-[10px] font-bold tracking-[0.2em] uppercase">Anime Streaming</p>
             </div>
           </motion.div>
@@ -231,7 +251,11 @@ export const Login: React.FC = () => {
               <Loader2 className="w-5 h-5 animate-spin" />
             ) : (
               <>
-                <Chrome className="w-5 h-5" />
+                <img 
+                  src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" 
+                  alt="Google" 
+                  className="w-5 h-5"
+                />
                 Google
               </>
             )}
@@ -243,7 +267,7 @@ export const Login: React.FC = () => {
               className="text-zinc-500 hover:text-white transition-colors text-sm font-medium"
             >
               {isLogin ? (
-                <span>New to Shahid X Rex? <span className="text-blue-500 font-bold">Sign Up</span></span>
+                <span>New to sahidanime? <span className="text-blue-500 font-bold">Sign Up</span></span>
               ) : (
                 <span>Already have an account? <span className="text-blue-500 font-bold">Sign In</span></span>
               )}

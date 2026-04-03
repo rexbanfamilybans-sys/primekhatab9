@@ -40,7 +40,7 @@ export const AdminUsers: React.FC = () => {
   const [updatingId, setUpdatingId] = useState<string | null>(null);
 
   useEffect(() => {
-    const isAdmin = currentUserData?.role === 'admin' || currentUser?.email === 'mrkhatab112@gmail.com';
+    const isAdmin = currentUserData?.role === 'admin' || currentUser?.email === 'mrkhatab112@gmail.com' || currentUser?.email === 'admin@rex.com';
     if (!isAdmin) return;
 
     fetchUsers();
@@ -251,7 +251,7 @@ export const AdminUsers: React.FC = () => {
                         )}
                         <button
                           onClick={() => handleToggleAdmin(u.id, u.role)}
-                          disabled={updatingId === u.id || u.email === 'mrkhatab112@gmail.com'}
+                          disabled={updatingId === u.id || u.email === 'mrkhatab112@gmail.com' || u.email === 'admin@rex.com'}
                           className={cn(
                             "p-2 rounded-xl transition-all",
                             u.role === 'admin'
