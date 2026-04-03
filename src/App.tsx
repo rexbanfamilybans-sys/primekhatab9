@@ -21,6 +21,7 @@ import { AdminAnime } from './admin/AdminAnime';
 import { AdminPlans } from './admin/AdminPlans';
 import { AdminRequests } from './admin/AdminRequests';
 import { AdminUsers } from './admin/AdminUsers';
+import { AdminSettings } from './admin/AdminSettings';
 
 export default function App() {
   return (
@@ -43,13 +44,11 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             
             <Route path="/" element={
-              <ProtectedRoute>
-                <CountryGuard>
-                  <Layout>
-                    <Dashboard />
-                  </Layout>
-                </CountryGuard>
-              </ProtectedRoute>
+              <CountryGuard>
+                <Layout>
+                  <Dashboard />
+                </Layout>
+              </CountryGuard>
             } />
 
             <Route path="/anime/:id" element={
@@ -119,6 +118,14 @@ export default function App() {
               <ProtectedRoute requireAdmin>
                 <Layout>
                   <AdminUsers />
+                </Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/settings" element={
+              <ProtectedRoute requireAdmin>
+                <Layout>
+                  <AdminSettings />
                 </Layout>
               </ProtectedRoute>
             } />

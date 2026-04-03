@@ -7,6 +7,7 @@ import { cn } from '../lib/utils';
 import { toast } from 'react-hot-toast';
 
 import { PLANS, PAYMENT_METHODS } from '../constants';
+import { sendTelegramNotification } from '../services/telegramService';
 
 export const Premium: React.FC = () => {
   const { userData, user } = useAuth();
@@ -79,6 +80,11 @@ export const Premium: React.FC = () => {
         status: 'pending',
         createdAt: serverTimestamp()
       });
+
+      // Send Telegram Notification
+      const telegramMessage = `ðŸ’° *New Purchase Request*\n\nâœ… *User:* ${userData.name || 'Anonymous'}\nðŸ“§ *Email:* ${userData.email}\nðŸ“¦ *Plan:* ${selectedPlan.name}\nðŸ’µ *Amount:* ${planPrice.symbol}${planPrice.amount}\nðŸŒŽ *Country:* ${countryCode}\nâ³ *Status:* Pending Approval`;
+      await sendTelegramNotification(telegramMessage);
+
       toast.success('Request submitted! Admin will approve it soon.');
       setSelectedPlan(null);
       setTransactionId('');

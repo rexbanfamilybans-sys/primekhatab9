@@ -42,11 +42,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     { name: 'Profile', icon: User, path: '/profile' },
   ];
 
-  const isAdminUser = userData?.role === 'admin' || user?.email === 'mrkhatab112@gmail.com' || user?.email === 'admin@rex.com';
+  const isAdminUser = user && (userData?.role === 'admin' || user?.email === 'mrkhatab112@gmail.com' || user?.email === 'admin@rex.com');
 
   if (isAdminUser) {
     navItems.push({ name: 'Admin Panel', icon: LayoutDashboard, path: '/admin' });
     navItems.push({ name: 'Users', icon: Users, path: '/admin/users' });
+    navItems.push({ name: 'Settings', icon: Settings, path: '/admin/settings' });
   }
 
   return (
@@ -101,16 +102,29 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             "pt-4 border-t",
             theme === 'dark' ? "border-zinc-800" : "border-zinc-200"
           )}>
-            <button 
-              onClick={handleLogout}
-              className={cn(
-                "flex items-center gap-3 px-3 py-2 w-full rounded-lg transition-all duration-200",
-                theme === 'dark' ? "text-zinc-400 hover:bg-red-500/10 hover:text-red-500" : "text-zinc-500 hover:bg-red-500/10 hover:text-red-500"
-              )}
-            >
-              <LogOut className="w-4 h-4" />
-              <span className="font-medium text-sm">Logout</span>
-            </button>
+            {user ? (
+              <button 
+                onClick={handleLogout}
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 w-full rounded-lg transition-all duration-200",
+                  theme === 'dark' ? "text-zinc-400 hover:bg-red-500/10 hover:text-red-500" : "text-zinc-500 hover:bg-red-500/10 hover:text-red-500"
+                )}
+              >
+                <LogOut className="w-4 h-4" />
+                <span className="font-medium text-sm">Logout</span>
+              </button>
+            ) : (
+              <Link 
+                to="/login"
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 w-full rounded-lg transition-all duration-200",
+                  theme === 'dark' ? "text-zinc-400 hover:bg-blue-500/10 hover:text-blue-500" : "text-zinc-500 hover:bg-blue-500/10 hover:text-blue-500"
+                )}
+              >
+                <User className="w-4 h-4" />
+                <span className="font-medium text-sm">Sign In</span>
+              </Link>
+            )}
           </div>
         </div>
       </aside>
@@ -171,7 +185,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                 className="flex items-center gap-2 p-1 rounded-full hover:bg-zinc-100 dark:hover:bg-zinc-900 transition-colors"
               >
                 <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-[10px] font-bold text-white">
-                  {userData?.name?.[0]?.toUpperCase() || 'U'}
+                  {user ? (userData?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U') : '?'}
                 </div>
                 <ChevronDown className={cn("w-3 h-3 text-zinc-500 transition-transform", isProfileOpen && "rotate-180")} />
               </button>
@@ -193,43 +207,66 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                         "p-4 border-b",
                         theme === 'dark' ? "border-zinc-800" : "border-zinc-200"
                       )}>
-                        <p className={cn(
-                          "font-bold text-sm truncate",
-                          theme === 'dark' ? "text-white" : "text-zinc-900"
-                        )}>{userData?.name}</p>
-                        <p className="text-xs text-zinc-500 truncate">{userData?.email}</p>
-                        {userData?.subscription_status === 'active' && (
-                          <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded-full text-[10px] font-bold uppercase tracking-wider">
-                            <ShieldCheck className="w-3 h-3" />
-                            Premium
-                          </div>
+                        {user ? (
+                          <>
+                            <p className={cn(
+                              "font-bold text-sm truncate",
+                              theme === 'dark' ? "text-white" : "text-zinc-900"
+                            )}>{userData?.name || user?.email}</p>
+                            <p className="text-xs text-zinc-500 truncate">{user?.email}</p>
+                            {userData?.subscription_status === 'active' && (
+                              <div className="mt-2 inline-flex items-center gap-1 px-2 py-0.5 bg-blue-500/10 text-blue-500 rounded-full text-[10px] font-bold uppercase tracking-wider">
+                                <ShieldCheck className="w-3 h-3" />
+                                Premium
+                              </div>
+                            )}
+                          </>
+                        ) : (
+                          <p className={cn(
+                            "font-bold text-sm",
+                            theme === 'dark' ? "text-white" : "text-zinc-900"
+                          )}>Guest User</p>
                         )}
                       </div>
                       <div className="p-2">
-                        <Link 
-                          to="/profile" 
-                          className={cn(
-                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
-                            theme === 'dark' ? "text-zinc-400 hover:bg-zinc-800 hover:text-white" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
-                          )}
-                        >
-                          <User className="w-4 h-4" /> Profile
-                        </Link>
-                        <Link 
-                          to="/settings" 
-                          className={cn(
-                            "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
-                            theme === 'dark' ? "text-zinc-400 hover:bg-zinc-800 hover:text-white" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
-                          )}
-                        >
-                          <Settings className="w-4 h-4" /> Settings
-                        </Link>
-                        <button 
-                          onClick={handleLogout}
-                          className="flex items-center gap-3 px-3 py-2 w-full rounded-lg hover:bg-red-500/10 text-red-500 text-sm transition-colors"
-                        >
-                          <LogOut className="w-4 h-4" /> Logout
-                        </button>
+                        {user ? (
+                          <>
+                            <Link 
+                              to="/profile" 
+                              className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+                                theme === 'dark' ? "text-zinc-400 hover:bg-zinc-800 hover:text-white" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
+                              )}
+                            >
+                              <User className="w-4 h-4" /> Profile
+                            </Link>
+                            <Link 
+                              to="/settings" 
+                              className={cn(
+                                "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+                                theme === 'dark' ? "text-zinc-400 hover:bg-zinc-800 hover:text-white" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
+                              )}
+                            >
+                              <Settings className="w-4 h-4" /> Settings
+                            </Link>
+                            <button 
+                              onClick={handleLogout}
+                              className="flex items-center gap-3 px-3 py-2 w-full rounded-lg hover:bg-red-500/10 text-red-500 text-sm transition-colors"
+                            >
+                              <LogOut className="w-4 h-4" /> Logout
+                            </button>
+                          </>
+                        ) : (
+                          <Link 
+                            to="/login" 
+                            className={cn(
+                              "flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors",
+                              theme === 'dark' ? "text-zinc-400 hover:bg-zinc-800 hover:text-white" : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
+                            )}
+                          >
+                            <User className="w-4 h-4" /> Sign In
+                          </Link>
+                        )}
                       </div>
                     </motion.div>
                   </>

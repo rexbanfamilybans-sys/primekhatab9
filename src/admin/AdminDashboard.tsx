@@ -69,6 +69,12 @@ export const AdminDashboard: React.FC = () => {
           <p className="text-zinc-500">Manage your anime streaming platform</p>
         </div>
         <div className="flex items-center gap-3">
+          <Link 
+            to="/admin/settings"
+            className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-colors relative"
+          >
+            <Settings className="w-5 h-5" />
+          </Link>
           <button className="p-2 bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-colors relative">
             <Bell className="w-5 h-5" />
             {stats.pendingRequests > 0 && (
@@ -163,6 +169,18 @@ export const AdminDashboard: React.FC = () => {
               <div className="space-y-1">
                 <h3 className="font-bold text-lg">Manage Users</h3>
                 <p className="text-sm text-zinc-500">Manage accounts and subscriptions</p>
+              </div>
+            </Link>
+            <Link 
+              to="/admin/settings"
+              className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-3xl flex items-center gap-6 hover:bg-zinc-900 hover:border-blue-500/50 transition-all group"
+            >
+              <div className="w-14 h-14 bg-blue-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Settings className="w-7 h-7 text-blue-500" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-lg">Platform Settings</h3>
+                <p className="text-sm text-zinc-500">Configure Telegram notifications</p>
               </div>
             </Link>
           </div>
