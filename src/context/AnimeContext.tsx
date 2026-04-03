@@ -33,10 +33,7 @@ export const AnimeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!isAuthReady || !user) {
-      if (isAuthReady && !user) setLoading(false);
-      return;
-    }
+    if (!isAuthReady) return;
 
     const animeQuery = query(collection(db, 'anime'));
     const unsubAnime = onSnapshot(animeQuery, (snapshot) => {
@@ -56,7 +53,7 @@ export const AnimeProvider: React.FC<{ children: React.ReactNode }> = ({ childre
     return () => {
       unsubAnime();
     };
-  }, [user, isAuthReady]);
+  }, [isAuthReady]);
 
   return (
     <AnimeContext.Provider value={{ animes, loading }}>
