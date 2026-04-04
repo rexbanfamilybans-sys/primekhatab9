@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -145,12 +145,11 @@ export const AdminSettings: React.FC = () => {
       return toast.error("Please fill in all fields");
     }
 
-    if (!window.confirm("CRITICAL WARNING: This will create a new admin and DELETE your current admin database record. You will be logged out and must log in with the new credentials. Continue?")) return;
+    if (!window.confirm("CRITICAL WARNING: This will create a new admin and DEMOTE your current account to a regular user. You will be logged out and must log in with the new credentials. Continue?")) return;
 
     setIsMigrating(true);
     try {
       // 1. Create new admin via secondary app
-      // Use a unique name or check if it exists to avoid "duplicate app" error
       const appName = `MigrationApp_${Date.now()}`;
       const secondaryApp = initializeApp(firebaseConfig, appName);
       const secondaryAuth = getAuth(secondaryApp);
@@ -175,9 +174,18 @@ export const AdminSettings: React.FC = () => {
         createdAt: serverTimestamp()
       });
 
-      // 3. Delete current admin document (Firestore only)
+      // 3. Demote current admin to regular user and clear their data
       if (user?.uid) {
-        await deleteDoc(doc(db, 'users', user.uid));
+        await setDoc(doc(db, 'users', user.uid), {
+          uid: user.uid,
+          email: user.email,
+          name: 'Former Admin',
+          role: 'user',
+          subscription_status: 'none',
+          subscription_plan: 'none',
+          country: userData?.country || 'Unknown',
+          updatedAt: serverTimestamp()
+        });
       }
 
       // 4. Clean up and logout
@@ -388,7 +396,7 @@ export const AdminSettings: React.FC = () => {
             <div className="space-y-2">
               <p className="text-sm font-bold text-purple-500">Danger Zone</p>
               <p className="text-xs text-zinc-400 leading-relaxed">
-                This tool allows you to create a brand new admin account and automatically <strong>delete your current admin record</strong> from the database. Use this only when you want to change your primary admin email/password.
+                This tool allows you to create a brand new admin account and automatically <strong>demote your current account to a regular user</strong>. Use this only when you want to change your primary admin email/password.
               </p>
             </div>
           </div>
@@ -460,7 +468,7 @@ export const AdminSettings: React.FC = () => {
               ) : (
                 <>
                   <ArrowRight className="w-5 h-5" />
-                  Create New Admin & Delete Current
+                  Create New Admin & Demote Current
                 </>
               )}
             </button>
