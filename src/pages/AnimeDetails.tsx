@@ -186,9 +186,31 @@ export const AnimeDetails: React.FC = () => {
     }
   };
 
-  const getPrice = (plan: any) => {
-    const p = plan.prices[countryCode] || plan.prices.DEFAULT;
-    return `${p.symbol}${p.amount}`;
+  const handleShare = async () => {
+    const shareData = {
+      title: anime?.title || 'SahidAnime',
+      text: `Watch ${anime?.title} - Episode ${selectedEpisode?.order || ''} on SahidAnime!`,
+      url: window.location.href,
+    };
+
+    try {
+      if (navigator.share) {
+        await navigator.share(shareData);
+      } else {
+        await navigator.clipboard.writeText(window.location.href);
+        toast.success('Link copied to clipboard!');
+      }
+    } catch (err) {
+      console.error('Share failed:', err);
+    }
+  };
+
+  const handleDownload = () => {
+    if (!selectedEpisode?.downloadUrl) {
+      toast.error('Download link not available for this episode');
+      return;
+    }
+    window.open(selectedEpisode.downloadUrl, '_blank');
   };
 
   if (loading) return <div className="min-h-screen bg-black" />;
@@ -209,6 +231,14 @@ export const AnimeDetails: React.FC = () => {
               src={selectedEpisode.videoUrl} 
               title={`${anime?.title} - Episode ${selectedEpisode.order}`} 
             />
+            {selectedEpisode.downloadUrl && (
+              <button 
+                onClick={handleDownload}
+                className="absolute bottom-4 right-4 z-20 bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-xl text-xs font-bold flex items-center gap-2 shadow-xl transition-all active:scale-95"
+              >
+                <Upload className="w-4 h-4 rotate-180" /> Download Episode
+              </button>
+            )}
           </div>
         ) : (
           <div className="relative aspect-video">
@@ -254,7 +284,10 @@ export const AnimeDetails: React.FC = () => {
                 <button className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-colors">
                   <Plus className="w-5 h-5" />
                 </button>
-                <button className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-colors">
+                <button 
+                  onClick={handleShare}
+                  className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-colors"
+                >
                   <Share2 className="w-5 h-5" />
                 </button>
               </div>

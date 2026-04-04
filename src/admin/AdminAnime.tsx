@@ -15,6 +15,7 @@ export const AdminAnime: React.FC = () => {
   const [editingEpisodeId, setEditingEpisodeId] = useState<string | null>(null);
   const [showEpisodeList, setShowEpisodeList] = useState<string | null>(null);
   const [animeEpisodes, setAnimeEpisodes] = useState<any[]>([]);
+  const [editingAnimeId, setEditingAnimeId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -26,6 +27,7 @@ export const AdminAnime: React.FC = () => {
   const [epData, setEpData] = useState({
     title: '',
     videoUrl: '',
+    downloadUrl: '',
     accessType: 'free' as 'free' | 'premium' | 'locked',
     order: 1
   });
@@ -47,7 +49,7 @@ export const AdminAnime: React.FC = () => {
 
   const handleAddAnime = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.poster && !formData.posterUrl) return toast.error('Please select a poster or provide a URL');
+    if (!formData.poster && !formData.posterUrl && !editingAnimeId) return toast.error('Please select a poster or provide a URL');
     setLoading(true);
 
     try {
@@ -59,22 +61,66 @@ export const AdminAnime: React.FC = () => {
         finalPosterUrl = await getDownloadURL(uploadSnap.ref);
       }
 
-      await addDoc(collection(db, 'anime'), {
+      const animeData = {
         title: formData.title,
         description: formData.description,
         genre: formData.genre,
         posterUrl: finalPosterUrl,
-        createdAt: serverTimestamp()
-      });
+        updatedAt: serverTimestamp()
+      };
 
-      toast.success('Anime added successfully!');
+      if (editingAnimeId) {
+        await updateDoc(doc(db, 'anime', editingAnimeId), animeData);
+        toast.success('Anime updated successfully!');
+      } else {
+        await addDoc(collection(db, 'anime'), {
+          ...animeData,
+          createdAt: serverTimestamp()
+        });
+        toast.success('Anime added successfully!');
+      }
+
       setShowAddModal(false);
+      setEditingAnimeId(null);
       setFormData({ title: '', description: '', genre: '', poster: null, posterUrl: '' });
     } catch (error: any) {
       toast.error(error.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeleteAnime = async (animeId: string) => {
+    if (!window.confirm('Are you sure you want to delete this anime? All episodes will also be deleted.')) return;
+    setLoading(true);
+    try {
+      // 1. Delete all episodes first
+      const q = query(collection(db, 'anime', animeId, 'episodes'));
+      const querySnapshot = await getDocs(q);
+      const deletePromises = querySnapshot.docs.map(doc => deleteDoc(doc.ref));
+      await Promise.all(deletePromises);
+
+      // 2. Delete the anime document
+      await deleteDoc(doc(db, 'anime', animeId));
+      toast.success('Anime and all episodes deleted!');
+    } catch (error: any) {
+      console.error("Delete Anime Error:", error);
+      toast.error('Failed to delete anime');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const openEditAnime = (anime: any) => {
+    setFormData({
+      title: anime.title,
+      description: anime.description,
+      genre: anime.genre,
+      poster: null,
+      posterUrl: anime.posterUrl
+    });
+    setEditingAnimeId(anime.id);
+    setShowAddModal(true);
   };
 
   const fetchEpisodes = async (animeId: string) => {
@@ -102,7 +148,8 @@ export const AdminAnime: React.FC = () => {
       const formattedVideoUrl = formatDailymotionUrl(epData.videoUrl);
       const finalEpData = {
         ...epData,
-        videoUrl: formattedVideoUrl
+        videoUrl: formattedVideoUrl,
+        downloadUrl: epData.downloadUrl || ''
       };
 
       if (editingEpisodeId) {
@@ -120,7 +167,7 @@ export const AdminAnime: React.FC = () => {
         toast.success('Episode added!');
       }
       
-      setEpData({ title: '', videoUrl: '', accessType: 'free', order: epData.order + 1 });
+      setEpData({ title: '', videoUrl: '', downloadUrl: '', accessType: 'free', order: epData.order + 1 });
       setShowEpisodeModal(null);
       setEditingEpisodeId(null);
       if (showEpisodeList) fetchEpisodes(showEpisodeList);
@@ -166,6 +213,7 @@ export const AdminAnime: React.FC = () => {
     setEpData({
       title: ep.title,
       videoUrl: ep.videoUrl,
+      downloadUrl: ep.downloadUrl || '',
       accessType: ep.accessType,
       order: ep.order
     });
@@ -214,10 +262,16 @@ export const AdminAnime: React.FC = () => {
                 >
                   <ChevronRight className="w-3 h-3" /> View Eps
                 </button>
-                <button className="p-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors text-zinc-400 hover:text-white">
+                <button 
+                  onClick={() => openEditAnime(anime)}
+                  className="p-2 bg-zinc-800 rounded-lg hover:bg-zinc-700 transition-colors text-zinc-400 hover:text-white"
+                >
                   <Edit2 className="w-3 h-3" />
                 </button>
-                <button className="p-2 bg-red-600/10 text-red-500 rounded-lg hover:bg-red-600 hover:text-white transition-all">
+                <button 
+                  onClick={() => handleDeleteAnime(anime.id)}
+                  className="p-2 bg-red-600/10 text-red-500 rounded-lg hover:bg-red-600 hover:text-white transition-all"
+                >
                   <Trash2 className="w-3 h-3" />
                 </button>
               </div>
@@ -230,12 +284,19 @@ export const AdminAnime: React.FC = () => {
       {showAddModal && (
         <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300">
           <div className="bg-zinc-900 border border-zinc-800 rounded-3xl p-8 w-full max-w-xl space-y-6 shadow-2xl relative">
-            <button onClick={() => setShowAddModal(false)} className="absolute top-6 right-6 text-zinc-500 hover:text-white">
+            <button 
+              onClick={() => {
+                setShowAddModal(false);
+                setEditingAnimeId(null);
+                setFormData({ title: '', description: '', genre: '', poster: null, posterUrl: '' });
+              }} 
+              className="absolute top-6 right-6 text-zinc-500 hover:text-white"
+            >
               <X className="w-6 h-6" />
             </button>
             <h2 className="text-2xl font-bold flex items-center gap-3">
               <Film className="w-6 h-6 text-blue-500" />
-              Add New Anime
+              {editingAnimeId ? 'Edit Anime' : 'Add New Anime'}
             </h2>
             <form onSubmit={handleAddAnime} className="space-y-4">
               <div className="space-y-2">
@@ -357,6 +418,16 @@ export const AdminAnime: React.FC = () => {
                 />
               </div>
               <div className="space-y-2">
+                <label className="text-sm font-bold text-zinc-400">Download Link (Google Drive / Mega)</label>
+                <input 
+                  type="url" 
+                  placeholder="https://drive.google.com/..."
+                  className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 focus:outline-none focus:border-blue-500 transition-all"
+                  value={epData.downloadUrl}
+                  onChange={(e) => setEpData({ ...epData, downloadUrl: e.target.value })}
+                />
+              </div>
+              <div className="space-y-2">
                 <label className="text-sm font-bold text-zinc-400">Access Type (Free or Paid)</label>
                 <select 
                   className="w-full bg-zinc-800 border border-zinc-700 rounded-xl py-3 px-4 focus:outline-none focus:border-blue-500 transition-all"
@@ -422,7 +493,7 @@ export const AdminAnime: React.FC = () => {
                         </span>
                       </div>
                     </div>
-                    <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-2 transition-opacity">
                       <button 
                         onClick={() => openEditEpisode(ep)}
                         className="p-2 bg-blue-600/10 text-blue-500 rounded-lg hover:bg-blue-600 hover:text-white transition-all"
