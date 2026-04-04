@@ -35,6 +35,8 @@ interface UserData {
   displayName?: string;
   role: string;
   subscription_status?: string;
+  subscription_plan?: string;
+  subscription_method?: 'payment' | 'coupon' | 'none';
   subscription_expiry?: any;
   createdAt?: any;
   photoURL?: string;
@@ -45,7 +47,7 @@ export const AdminUsers: React.FC = () => {
   const [users, setUsers] = useState<UserData[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filter, setFilter] = useState<'all' | 'premium' | 'free' | 'admin'>('all');
+  const [filter, setFilter] = useState<'all' | 'premium' | 'free' | 'admin' | 'payment' | 'coupon'>('all');
   const [updatingId, setUpdatingId] = useState<string | null>(null);
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newUserData, setNewUserData] = useState({
@@ -89,11 +91,13 @@ export const AdminUsers: React.FC = () => {
       const userRef = doc(db, 'users', userId);
       await updateDoc(userRef, {
         subscription_status: 'none',
+        subscription_plan: 'none',
+        subscription_method: 'none',
         subscription_expiry: null
       });
       
       setUsers(prev => prev.map(u => 
-        u.id === userId ? { ...u, subscription_status: 'none', subscription_expiry: null } : u
+        u.id === userId ? { ...u, subscription_status: 'none', subscription_plan: 'none', subscription_method: 'none', subscription_expiry: null } : u
       ));
       
       toast.success("Subscription cancelled successfully");
@@ -176,6 +180,7 @@ export const AdminUsers: React.FC = () => {
         role: newUserData.role,
         subscription_status: 'none',
         subscription_plan: 'none',
+        subscription_method: 'none',
         country: 'Unknown',
         createdAt: serverTimestamp()
       });
@@ -207,6 +212,8 @@ export const AdminUsers: React.FC = () => {
     if (filter === 'premium') return matchesSearch && u.subscription_status === 'active';
     if (filter === 'free') return matchesSearch && (!u.subscription_status || u.subscription_status === 'none');
     if (filter === 'admin') return matchesSearch && u.role === 'admin';
+    if (filter === 'payment') return matchesSearch && u.subscription_method === 'payment';
+    if (filter === 'coupon') return matchesSearch && u.subscription_method === 'coupon';
     return matchesSearch;
   });
 
@@ -243,6 +250,8 @@ export const AdminUsers: React.FC = () => {
           >
             <option value="all">All Users</option>
             <option value="premium">Premium Only</option>
+            <option value="payment">Paid Subscriptions</option>
+            <option value="coupon">Coupon Subscriptions</option>
             <option value="free">Free Only</option>
             <option value="admin">Admins Only</option>
           </select>
@@ -257,6 +266,7 @@ export const AdminUsers: React.FC = () => {
                 <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-500">User</th>
                 <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-500">Role</th>
                 <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-500">Subscription</th>
+                <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-500">Method</th>
                 <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-500">Joined</th>
                 <th className="px-6 py-4 text-xs font-black uppercase tracking-widest text-zinc-500 text-right">Actions</th>
               </tr>
@@ -310,9 +320,11 @@ export const AdminUsers: React.FC = () => {
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-2">
                         {u.subscription_status === 'active' ? (
-                          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest">
-                            <Crown className="w-3 h-3" />
-                            Premium
+                          <div className="flex flex-col gap-1">
+                            <div className="flex items-center gap-1.5 px-2.5 py-1 bg-yellow-500/10 text-yellow-500 border border-yellow-500/20 rounded-lg text-[10px] font-black uppercase tracking-widest w-fit">
+                              <Crown className="w-3 h-3" />
+                              {u.subscription_plan || 'Premium'}
+                            </div>
                           </div>
                         ) : (
                           <div className="px-2.5 py-1 bg-zinc-800 text-zinc-500 border border-zinc-700 rounded-lg text-[10px] font-black uppercase tracking-widest">
@@ -320,6 +332,20 @@ export const AdminUsers: React.FC = () => {
                           </div>
                         )}
                       </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      {u.subscription_status === 'active' && (
+                        <span className={cn(
+                          "px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest border",
+                          u.subscription_method === 'payment' 
+                            ? "bg-green-500/10 text-green-500 border-green-500/20" 
+                            : u.subscription_method === 'coupon'
+                            ? "bg-blue-500/10 text-blue-500 border-blue-500/20"
+                            : "bg-zinc-800 text-zinc-500 border-zinc-700"
+                        )}>
+                          {u.subscription_method === 'payment' ? 'Payment' : u.subscription_method === 'coupon' ? 'Coupon' : 'Manual'}
+                        </span>
+                      )}
                     </td>
                     <td className="px-6 py-4">
                       <div className="flex items-center gap-1.5 text-xs text-zinc-500">

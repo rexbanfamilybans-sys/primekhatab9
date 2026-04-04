@@ -18,6 +18,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { toast } from 'react-hot-toast';
+import { useAuth } from '../context/AuthContext';
 import { PLANS } from '../constants';
 
 interface RedeemCode {
@@ -32,6 +33,7 @@ interface RedeemCode {
 }
 
 export const AdminRedeemCodes: React.FC = () => {
+  const { userData } = useAuth();
   const [codes, setCodes] = useState<RedeemCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -44,14 +46,23 @@ export const AdminRedeemCodes: React.FC = () => {
   });
 
   useEffect(() => {
+    const isAdmin = userData?.role === 'admin';
+    if (!isAdmin) {
+      if (!loading) setLoading(false);
+      return;
+    }
+
     const q = query(collection(db, 'redeemCodes'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, (snapshot) => {
       const codeList = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as RedeemCode));
       setCodes(codeList);
       setLoading(false);
+    }, (error) => {
+      console.error("Redeem Codes Snapshot Error:", error);
+      setLoading(false);
     });
     return () => unsub();
-  }, []);
+  }, [userData]);
 
   const generateRandomCode = () => {
     const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';

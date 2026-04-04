@@ -61,7 +61,9 @@ export const AdminRequests: React.FC = () => {
       // Update user subscription status
       await updateDoc(doc(db, 'users', request.userId), {
         subscription_status: action === 'approved' ? 'active' : 'rejected',
-        subscription_plan: action === 'approved' ? request.planName : 'none'
+        subscription_plan: action === 'approved' ? request.planName : 'none',
+        subscription_method: action === 'approved' ? 'payment' : 'none',
+        subscription_updated_at: serverTimestamp()
       });
 
       toast.success(`Request ${action} successfully!`);

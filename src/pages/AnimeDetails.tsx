@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useParams } from 'react-router-dom';
-import { doc, getDoc, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { VideoPlayer } from '../components/VideoPlayer';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
-import { Play, Lock, Crown, Info, List, Star, Share2, Plus, X, Globe, CreditCard, Loader2, Zap, ArrowRight, Upload } from 'lucide-react';
+import { Play, Lock, Crown, Info, List, Star, Share2, Plus, X, Globe, CreditCard, Loader2, Zap, ArrowRight, Upload, Heart, MessageCircle, Send, Trash2 as TrashIcon } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { toast } from 'react-hot-toast';
+import { formatDistanceToNow } from 'date-fns';
 
 interface CurrencyInfo {
   code: string;
@@ -41,6 +42,11 @@ export const AnimeDetails: React.FC = () => {
   const [transactionId, setTransactionId] = useState('');
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
+  const [isLiked, setIsLiked] = useState(false);
+  const [comments, setComments] = useState<any[]>([]);
+  const [newComment, setNewComment] = useState('');
+  const [isCommenting, setIsCommenting] = useState(false);
 
   const isPremium = userData?.subscription_status === 'active' || userData?.role === 'admin';
   const isAdmin = userData?.role === 'admin';
@@ -131,6 +137,96 @@ export const AnimeDetails: React.FC = () => {
     fetchAnime();
     return () => unsub();
   }, [id]);
+
+  // Fetch Likes and Comments for selected episode
+  useEffect(() => {
+    if (!id || !selectedEpisode) {
+      setLikesCount(0);
+      setIsLiked(false);
+      setComments([]);
+      return;
+    }
+
+    // Listen for Likes
+    const likesQuery = query(collection(db, 'anime', id, 'episodes', selectedEpisode.id, 'likes'));
+    const unsubLikes = onSnapshot(likesQuery, (snapshot) => {
+      setLikesCount(snapshot.size);
+      if (userData) {
+        setIsLiked(snapshot.docs.some(doc => doc.id === userData.uid));
+      }
+    }, (error) => {
+      console.error("Likes Snapshot Error:", error);
+    });
+
+    // Listen for Comments
+    const commentsQuery = query(
+      collection(db, 'anime', id, 'episodes', selectedEpisode.id, 'comments'),
+      orderBy('createdAt', 'desc')
+    );
+    const unsubComments = onSnapshot(commentsQuery, (snapshot) => {
+      setComments(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+    }, (error) => {
+      console.error("Comments Snapshot Error:", error);
+    });
+
+    return () => {
+      unsubLikes();
+      unsubComments();
+    };
+  }, [id, selectedEpisode, userData]);
+
+  const handleLike = async () => {
+    if (!userData) return toast.error('Please login to like');
+    if (!id || !selectedEpisode) return;
+
+    const likeRef = doc(db, 'anime', id, 'episodes', selectedEpisode.id, 'likes', userData.uid);
+    
+    try {
+      if (isLiked) {
+        await deleteDoc(likeRef);
+      } else {
+        await setDoc(likeRef, {
+          userId: userData.uid,
+          createdAt: serverTimestamp()
+        });
+      }
+    } catch (error: any) {
+      toast.error('Failed to update like');
+    }
+  };
+
+  const handleAddComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!userData) return toast.error('Please login to comment');
+    if (!newComment.trim() || !id || !selectedEpisode) return;
+
+    setIsCommenting(true);
+    try {
+      await addDoc(collection(db, 'anime', id, 'episodes', selectedEpisode.id, 'comments'), {
+        userId: userData.uid,
+        userName: userData.name || 'User',
+        userPhoto: userData.photoURL || '',
+        text: newComment.trim(),
+        createdAt: serverTimestamp()
+      });
+      setNewComment('');
+      toast.success('Comment added!');
+    } catch (error: any) {
+      toast.error('Failed to add comment');
+    } finally {
+      setIsCommenting(false);
+    }
+  };
+
+  const handleDeleteComment = async (commentId: string) => {
+    if (!id || !selectedEpisode) return;
+    try {
+      await deleteDoc(doc(db, 'anime', id, 'episodes', selectedEpisode.id, 'comments', commentId));
+      toast.success('Comment deleted');
+    } catch (error) {
+      toast.error('Failed to delete comment');
+    }
+  };
 
   const canWatch = (episode: Episode) => {
     if (!episode) return false;
@@ -281,6 +377,18 @@ export const AnimeDetails: React.FC = () => {
                 </div>
               </div>
               <div className="flex gap-2">
+                <button 
+                  onClick={handleLike}
+                  className={cn(
+                    "flex items-center gap-2 px-4 py-2.5 rounded-xl border transition-all font-bold text-sm",
+                    isLiked 
+                      ? "bg-red-600/10 border-red-500/50 text-red-500" 
+                      : "bg-zinc-900 border-zinc-800 text-zinc-400 hover:bg-zinc-800"
+                  )}
+                >
+                  <Heart className={cn("w-5 h-5", isLiked && "fill-current")} />
+                  {likesCount > 0 && <span>{likesCount}</span>}
+                </button>
                 <button className="p-2.5 bg-zinc-900 border border-zinc-800 rounded-xl hover:bg-zinc-800 transition-colors">
                   <Plus className="w-5 h-5" />
                 </button>
@@ -308,6 +416,76 @@ export const AnimeDetails: React.FC = () => {
                 {anime?.description}
               </p>
             </div>
+
+            {/* Comments Section */}
+            {selectedEpisode && (
+              <div className="space-y-6 pt-6">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-xl font-black flex items-center gap-2">
+                    <MessageCircle className="w-5 h-5 text-blue-500" />
+                    Comments ({comments.length})
+                  </h3>
+                </div>
+
+                <form onSubmit={handleAddComment} className="relative">
+                  <input
+                    type="text"
+                    placeholder={userData ? "Add a public comment..." : "Login to comment"}
+                    disabled={!userData || isCommenting}
+                    className="w-full bg-zinc-900 border border-zinc-800 rounded-2xl py-4 pl-6 pr-14 focus:outline-none focus:border-blue-500 transition-all text-sm"
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                  />
+                  <button
+                    type="submit"
+                    disabled={!userData || isCommenting || !newComment.trim()}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-2 bg-blue-600 text-white rounded-xl hover:bg-blue-500 transition-all disabled:opacity-50 disabled:hover:bg-blue-600"
+                  >
+                    {isCommenting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                  </button>
+                </form>
+
+                <div className="space-y-4">
+                  {comments.map((comment) => (
+                    <div key={comment.id} className="flex gap-4 p-4 rounded-2xl bg-zinc-900/30 border border-zinc-800/50 group">
+                      <div className="w-10 h-10 rounded-full bg-zinc-800 flex-shrink-0 overflow-hidden">
+                        {comment.userPhoto ? (
+                          <img src={comment.userPhoto} alt={comment.userName} className="w-full h-full object-cover" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center text-zinc-500 font-bold">
+                            {comment.userName?.[0]?.toUpperCase()}
+                          </div>
+                        )}
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <span className="font-bold text-sm text-zinc-200">{comment.userName}</span>
+                            <span className="text-[10px] text-zinc-500">
+                              {comment.createdAt?.toDate ? formatDistanceToNow(comment.createdAt.toDate(), { addSuffix: true }) : 'just now'}
+                            </span>
+                          </div>
+                          {(userData?.uid === comment.userId || userData?.role === 'admin') && (
+                            <button 
+                              onClick={() => handleDeleteComment(comment.id)}
+                              className="p-1.5 text-zinc-500 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-all"
+                            >
+                              <TrashIcon className="w-4 h-4" />
+                            </button>
+                          )}
+                        </div>
+                        <p className="text-sm text-zinc-400 leading-relaxed">{comment.text}</p>
+                      </div>
+                    </div>
+                  ))}
+                  {comments.length === 0 && (
+                    <div className="text-center py-10 text-zinc-500 text-sm">
+                      No comments yet. Be the first to share your thoughts!
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         </div>
 

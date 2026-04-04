@@ -101,6 +101,30 @@
         "whatsapp": { "type": "string" },
         "enabled": { "type": "boolean" }
       }
+    },
+    "Like": {
+      "title": "Like",
+      "description": "User like on an episode",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId"]
+    },
+    "Comment": {
+      "title": "Comment",
+      "description": "User comment on an episode",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userPhoto": { "type": "string" },
+        "text": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "userName", "text"]
     }
   },
   "firestore": {
@@ -115,6 +139,14 @@
     "/anime/{animeId}/episodes/{episodeId}": {
       "schema": "Episode",
       "description": "Episodes for a specific anime"
+    },
+    "/anime/{animeId}/episodes/{episodeId}/likes/{userId}": {
+      "schema": "Like",
+      "description": "Likes for a specific episode"
+    },
+    "/anime/{animeId}/episodes/{episodeId}/comments/{commentId}": {
+      "schema": "Comment",
+      "description": "Comments for a specific episode"
     },
     "/plans/{planId}": {
       "schema": "Plan",

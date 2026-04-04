@@ -60,6 +60,7 @@ export const RedeemCode: React.FC = () => {
       await updateDoc(doc(db, 'users', user.uid), {
         subscription_plan: codeData.planId,
         subscription_status: 'active',
+        subscription_method: 'coupon',
         subscription_updated_at: serverTimestamp()
       });
 
