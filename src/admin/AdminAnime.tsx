@@ -30,6 +30,21 @@ export const AdminAnime: React.FC = () => {
     order: 1
   });
 
+  const formatDailymotionUrl = (url: string) => {
+    if (!url) return url;
+    
+    // Match normal dailymotion video link: https://www.dailymotion.com/video/k5Up5g2jnKrBdJFfjMQ
+    const dailymotionRegex = /dailymotion\.com\/video\/([a-zA-Z0-9]+)/;
+    const match = url.match(dailymotionRegex);
+    
+    if (match && match[1]) {
+      const videoCode = match[1];
+      return `https://geo.dailymotion.com/player.html?video=${videoCode}&autoplay=true&mute=false`;
+    }
+    
+    return url;
+  };
+
   const handleAddAnime = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.poster && !formData.posterUrl) return toast.error('Please select a poster or provide a URL');
@@ -84,15 +99,21 @@ export const AdminAnime: React.FC = () => {
     setLoading(true);
 
     try {
+      const formattedVideoUrl = formatDailymotionUrl(epData.videoUrl);
+      const finalEpData = {
+        ...epData,
+        videoUrl: formattedVideoUrl
+      };
+
       if (editingEpisodeId) {
         await updateDoc(doc(db, 'anime', showEpisodeModal, 'episodes', editingEpisodeId), {
-          ...epData,
+          ...finalEpData,
           updatedAt: serverTimestamp()
         });
         toast.success('Episode updated!');
       } else {
         await addDoc(collection(db, 'anime', showEpisodeModal, 'episodes'), {
-          ...epData,
+          ...finalEpData,
           animeId: showEpisodeModal,
           createdAt: serverTimestamp()
         });
