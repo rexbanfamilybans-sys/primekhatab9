@@ -50,7 +50,7 @@ service cloud.firestore {
     // Rules
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
-      allow create: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data);
+      allow create: if (isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data)) || isAdmin();
       allow update: if isAdmin() || (
         isOwner(userId) && 
         request.resource.data.role == resource.data.role &&
@@ -58,6 +58,7 @@ service cloud.firestore {
         request.resource.data.subscription_status == resource.data.subscription_status &&
         request.resource.data.subscription_plan == resource.data.subscription_plan
       );
+      allow delete: if isAdmin();
     }
 
     match /anime/{animeId} {

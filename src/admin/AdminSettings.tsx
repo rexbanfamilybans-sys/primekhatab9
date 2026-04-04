@@ -150,7 +150,9 @@ export const AdminSettings: React.FC = () => {
     setIsMigrating(true);
     try {
       // 1. Create new admin via secondary app
-      const secondaryApp = initializeApp(firebaseConfig, 'MigrationApp');
+      // Use a unique name or check if it exists to avoid "duplicate app" error
+      const appName = `MigrationApp_${Date.now()}`;
+      const secondaryApp = initializeApp(firebaseConfig, appName);
       const secondaryAuth = getAuth(secondaryApp);
       
       const userCredential = await createUserWithEmailAndPassword(

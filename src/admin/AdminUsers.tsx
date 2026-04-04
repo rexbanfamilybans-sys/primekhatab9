@@ -156,7 +156,8 @@ export const AdminUsers: React.FC = () => {
       setIsCreating(true);
       
       // Create a secondary Firebase app instance to create the user without signing out the current admin
-      const secondaryApp = initializeApp(firebaseConfig, 'SecondaryApp');
+      const appName = `SecondaryApp_${Date.now()}`;
+      const secondaryApp = initializeApp(firebaseConfig, appName);
       const secondaryAuth = getAuth(secondaryApp);
       
       const userCredential = await createUserWithEmailAndPassword(

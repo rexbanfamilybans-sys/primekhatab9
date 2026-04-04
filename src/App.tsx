@@ -10,7 +10,6 @@ import { AnimeProvider } from './context/AnimeContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { Layout } from './components/Layout';
 import { ProtectedRoute } from './components/ProtectedRoute';
-import { CountryGuard } from './components/CountryGuard';
 import { Login } from './pages/Login';
 import { Dashboard } from './pages/Dashboard';
 import { AnimeDetails } from './pages/AnimeDetails';
@@ -46,50 +45,40 @@ export default function App() {
             <Route path="/login" element={<Login />} />
             
             <Route path="/" element={
-              <CountryGuard>
-                <Layout>
-                  <Dashboard />
-                </Layout>
-              </CountryGuard>
+              <Layout>
+                <Dashboard />
+              </Layout>
             } />
 
             <Route path="/anime/:id" element={
               <ProtectedRoute>
-                <CountryGuard>
-                  <Layout>
-                    <AnimeDetails />
-                  </Layout>
-                </CountryGuard>
+                <Layout>
+                  <AnimeDetails />
+                </Layout>
               </ProtectedRoute>
             } />
 
             <Route path="/premium" element={
               <ProtectedRoute>
-                <CountryGuard>
-                  <Layout>
-                    <Premium />
-                  </Layout>
-                </CountryGuard>
+                <Layout>
+                  <Premium />
+                </Layout>
               </ProtectedRoute>
             } />
 
             <Route path="/profile" element={
               <ProtectedRoute>
-                <CountryGuard>
-                  <Layout>
-                    <Profile />
-                  </Layout>
-                </CountryGuard>
+                <Layout>
+                  <Profile />
+                </Layout>
               </ProtectedRoute>
             } />
 
             <Route path="/redeem" element={
               <ProtectedRoute>
-                <CountryGuard>
-                  <Layout>
-                    <RedeemCode />
-                  </Layout>
-                </CountryGuard>
+                <Layout>
+                  <RedeemCode />
+                </Layout>
               </ProtectedRoute>
             } />
 
