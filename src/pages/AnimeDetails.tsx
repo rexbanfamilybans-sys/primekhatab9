@@ -3,7 +3,6 @@ import { useParams } from 'react-router-dom';
 import { doc, getDoc, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { VideoPlayer } from '../components/VideoPlayer';
-import { AdOverlay } from '../components/AdOverlay';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Play, Lock, Crown, Info, List, Star, Share2, Plus, X, Globe, CreditCard, Loader2, Zap, ArrowRight, Upload } from 'lucide-react';
@@ -42,20 +41,20 @@ export const AnimeDetails: React.FC = () => {
   const [transactionId, setTransactionId] = useState('');
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showAd, setShowAd] = useState(false);
 
   const isPremium = userData?.subscription_status === 'active' || userData?.role === 'admin';
+  const isAdmin = userData?.role === 'admin';
 
+  // Security check: Clear selected episode if access is lost
   useEffect(() => {
-    if (!selectedEpisode || isPremium) return;
-
-    // Show ad every 2.5 minutes (150 seconds)
-    const adInterval = setInterval(() => {
-      setShowAd(true);
-    }, 150000); 
-
-    return () => clearInterval(adInterval);
-  }, [selectedEpisode, isPremium]);
+    if (selectedEpisode && !canWatch(selectedEpisode)) {
+      setSelectedEpisode(null);
+      setShowPlayer(false);
+      if (selectedEpisode.accessType === 'premium') {
+        setShowPremiumModal(true);
+      }
+    }
+  }, [userData, selectedEpisode]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -124,6 +123,9 @@ export const AnimeDetails: React.FC = () => {
       // Sort client-side to handle missing order
       setEpisodes(epList.sort((a, b) => (a.order || 0) - (b.order || 0)));
       setLoading(false);
+    }, (error) => {
+      console.error("Firestore Error (Episodes):", error);
+      setLoading(false);
     });
 
     fetchAnime();
@@ -131,9 +133,10 @@ export const AnimeDetails: React.FC = () => {
   }, [id]);
 
   const canWatch = (episode: Episode) => {
+    if (!episode) return false;
+    if (userData?.role === 'admin') return true;
     if (episode.accessType === 'free') return true;
     if (episode.accessType === 'premium' && userData?.subscription_status === 'active') return true;
-    if (userData?.role === 'admin') return true;
     return false;
   };
 
@@ -191,19 +194,20 @@ export const AnimeDetails: React.FC = () => {
   if (loading) return <div className="min-h-screen bg-black" />;
 
   return (
-    <div className="max-w-6xl mx-auto space-y-6 pb-20">
+    <div className="w-full space-y-6 pb-20">
       {/* 1. Video Player Section (Top) */}
-      <div className="bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 relative">
+      <div className="bg-zinc-900 lg:rounded-2xl overflow-hidden shadow-2xl border-b lg:border border-zinc-800 relative">
         {selectedEpisode ? (
           <div className="aspect-video relative">
+            {isAdmin && (
+              <div className="absolute top-4 left-4 z-20 bg-blue-600 text-white px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest shadow-xl flex items-center gap-1.5">
+                <Zap className="w-3 h-3 fill-current" /> Admin Access
+              </div>
+            )}
             <VideoPlayer 
               key={selectedEpisode.id}
               src={selectedEpisode.videoUrl} 
               title={`${anime?.title} - Episode ${selectedEpisode.order}`} 
-            />
-            <AdOverlay 
-              isVisible={showAd} 
-              onClose={() => setShowAd(false)} 
             />
           </div>
         ) : (

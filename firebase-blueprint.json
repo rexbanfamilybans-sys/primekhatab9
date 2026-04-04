@@ -76,6 +76,31 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "planId", "status", "transactionId"]
+    },
+    "RedeemCode": {
+      "title": "RedeemCode",
+      "description": "Codes that users can redeem for subscriptions",
+      "type": "object",
+      "properties": {
+        "code": { "type": "string" },
+        "planId": { "type": "string" },
+        "planName": { "type": "string" },
+        "maxUses": { "type": "number" },
+        "usedCount": { "type": "number" },
+        "usedBy": { "type": "array", "items": { "type": "string" } },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["code", "planId", "maxUses", "usedCount"]
+    },
+    "SupportLinks": {
+      "title": "SupportLinks",
+      "description": "Links for Telegram and WhatsApp support",
+      "type": "object",
+      "properties": {
+        "telegram": { "type": "string" },
+        "whatsapp": { "type": "string" },
+        "enabled": { "type": "boolean" }
+      }
     }
   },
   "firestore": {
@@ -98,6 +123,14 @@
     "/purchaseRequests/{requestId}": {
       "schema": "PurchaseRequest",
       "description": "User purchase requests"
+    },
+    "/redeemCodes/{codeId}": {
+      "schema": "RedeemCode",
+      "description": "Redeemable subscription codes"
+    },
+    "/settings/{settingId}": {
+      "schema": "SupportLinks",
+      "description": "Platform settings (telegram, support, etc.)"
     }
   }
 }

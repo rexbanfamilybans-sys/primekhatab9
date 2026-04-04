@@ -22,6 +22,8 @@ import { AdminPlans } from './admin/AdminPlans';
 import { AdminRequests } from './admin/AdminRequests';
 import { AdminUsers } from './admin/AdminUsers';
 import { AdminSettings } from './admin/AdminSettings';
+import { AdminRedeemCodes } from './admin/AdminRedeemCodes';
+import { RedeemCode } from './pages/RedeemCode';
 
 export default function App() {
   return (
@@ -81,6 +83,16 @@ export default function App() {
               </ProtectedRoute>
             } />
 
+            <Route path="/redeem" element={
+              <ProtectedRoute>
+                <CountryGuard>
+                  <Layout>
+                    <RedeemCode />
+                  </Layout>
+                </CountryGuard>
+              </ProtectedRoute>
+            } />
+
             {/* Admin Routes */}
             <Route path="/admin" element={
               <ProtectedRoute requireAdmin>
@@ -126,6 +138,14 @@ export default function App() {
               <ProtectedRoute requireAdmin>
                 <Layout>
                   <AdminSettings />
+                </Layout>
+              </ProtectedRoute>
+            } />
+
+            <Route path="/admin/redeem-codes" element={
+              <ProtectedRoute requireAdmin>
+                <Layout>
+                  <AdminRedeemCodes />
                 </Layout>
               </ProtectedRoute>
             } />

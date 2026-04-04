@@ -33,11 +33,22 @@ interface TelegramConfig {
   enabled: boolean;
 }
 
+interface SupportConfig {
+  telegram: string;
+  whatsapp: string;
+  enabled: boolean;
+}
+
 export const AdminSettings: React.FC = () => {
   const { user, userData } = useAuth();
   const [config, setConfig] = useState<TelegramConfig>({
     botToken: '',
     chatId: '',
+    enabled: false
+  });
+  const [supportConfig, setSupportConfig] = useState<SupportConfig>({
+    telegram: '',
+    whatsapp: '',
     enabled: false
   });
   const [loading, setLoading] = useState(true);
@@ -63,8 +74,14 @@ export const AdminSettings: React.FC = () => {
         if (docSnap.exists()) {
           setConfig(docSnap.data() as TelegramConfig);
         }
+
+        const supportRef = doc(db, 'settings', 'support');
+        const supportSnap = await getDoc(supportRef);
+        if (supportSnap.exists()) {
+          setSupportConfig(supportSnap.data() as SupportConfig);
+        }
       } catch (error) {
-        console.error("Error fetching telegram config:", error);
+        console.error("Error fetching config:", error);
         toast.error("Failed to load settings");
       } finally {
         setLoading(false);
@@ -78,9 +95,10 @@ export const AdminSettings: React.FC = () => {
     setSaving(true);
     try {
       await setDoc(doc(db, 'settings', 'telegram'), config);
+      await setDoc(doc(db, 'settings', 'support'), supportConfig);
       toast.success("Settings saved successfully");
     } catch (error) {
-      console.error("Error saving telegram config:", error);
+      console.error("Error saving config:", error);
       toast.error("Failed to save settings");
     } finally {
       setSaving(false);
@@ -276,6 +294,72 @@ export const AdminSettings: React.FC = () => {
               {testing ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5" /> Test Connection</>}
             </button>
           </div>
+        </motion.div>
+
+        {/* Support Links Card */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.05 }}
+          className="bg-zinc-900/50 border border-zinc-800 rounded-[2.5rem] p-8 space-y-8"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-green-500/10 rounded-2xl flex items-center justify-center">
+                <MessageSquare className="w-6 h-6 text-green-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Floating Support Icons</h2>
+                <p className="text-sm text-zinc-500">Configure Telegram and WhatsApp support links</p>
+              </div>
+            </div>
+            <label className="relative inline-flex items-center cursor-pointer">
+              <input 
+                type="checkbox" 
+                className="sr-only peer"
+                checked={supportConfig.enabled}
+                onChange={(e) => setSupportConfig({ ...supportConfig, enabled: e.target.checked })}
+              />
+              <div className="w-11 h-6 bg-zinc-800 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-600"></div>
+            </label>
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-zinc-500 ml-1">Telegram Link</label>
+              <div className="relative group">
+                <Send className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-blue-500 transition-colors" />
+                <input 
+                  type="text"
+                  placeholder="https://t.me/yourusername"
+                  value={supportConfig.telegram}
+                  onChange={(e) => setSupportConfig({ ...supportConfig, telegram: e.target.value })}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-blue-500 transition-all"
+                />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-black uppercase tracking-widest text-zinc-500 ml-1">WhatsApp Number/Link</label>
+              <div className="relative group">
+                <MessageSquare className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-green-500 transition-colors" />
+                <input 
+                  type="text"
+                  placeholder="https://wa.me/1234567890"
+                  value={supportConfig.whatsapp}
+                  onChange={(e) => setSupportConfig({ ...supportConfig, whatsapp: e.target.value })}
+                  className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-green-500 transition-all"
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            onClick={handleSave}
+            disabled={saving}
+            className="w-full bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-2xl font-bold flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50"
+          >
+            {saving ? <Loader2 className="w-5 h-5 animate-spin" /> : <><Save className="w-5 h-5" /> Save Support Settings</>}
+          </button>
         </motion.div>
 
         {/* Admin Migration Card */}

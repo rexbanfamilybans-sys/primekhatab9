@@ -21,8 +21,9 @@ import { auth } from '../firebase/firebase';
 import { signOut } from 'firebase/auth';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Sun, Moon } from 'lucide-react';
-import { AdManager } from './AdManager';
+import { Sun, Moon, Ticket } from 'lucide-react';
+import { FloatingSupport } from './FloatingSupport';
+import { AdComponent } from './AdComponent';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -56,11 +57,12 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       "min-h-screen flex transition-colors duration-300",
       theme === 'dark' ? "bg-black text-white" : "bg-white text-zinc-900"
     )}>
-      <AdManager />
+      <FloatingSupport />
+      <AdComponent type="popup" />
       {/* Sidebar - Desktop */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 border-r transition-transform duration-300 lg:translate-x-0",
-        theme === 'dark' ? "bg-zinc-950 border-zinc-800" : "bg-zinc-50 border-zinc-200",
+        theme === 'dark' ? "bg-zinc-900 border-zinc-800" : "bg-zinc-50 border-zinc-200",
         isSidebarOpen ? "translate-x-0" : "-translate-x-full"
       )}>
         <div className="h-full flex flex-col p-4">
@@ -87,7 +89,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
                   location.pathname === item.path 
                     ? "bg-blue-500/10 text-blue-500" 
                     : theme === 'dark'
-                      ? "text-zinc-400 hover:bg-zinc-900 hover:text-white"
+                      ? "text-zinc-400 hover:bg-zinc-800 hover:text-white"
                       : "text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900"
                 )}
               >
@@ -104,6 +106,18 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
             "pt-4 border-t",
             theme === 'dark' ? "border-zinc-800" : "border-zinc-200"
           )}>
+            {user && (
+              <Link 
+                to="/redeem"
+                className={cn(
+                  "flex items-center gap-3 px-3 py-2 w-full rounded-lg transition-all duration-200 mb-1",
+                  theme === 'dark' ? "text-zinc-400 hover:bg-blue-500/10 hover:text-blue-500" : "text-zinc-500 hover:bg-blue-500/10 hover:text-blue-500"
+                )}
+              >
+                <Ticket className="w-4 h-4" />
+                <span className="font-medium text-sm">Redeem Code</span>
+              </Link>
+            )}
             {user ? (
               <button 
                 onClick={handleLogout}
@@ -135,7 +149,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       <main className="flex-1 lg:ml-64 min-h-screen flex flex-col">
         {/* Topbar */}
         <header className={cn(
-          "sticky top-0 z-40 h-14 backdrop-blur-md border-b px-4 lg:px-6 flex items-center justify-between transition-colors",
+          "sticky top-0 z-40 h-16 backdrop-blur-md border-b px-4 lg:px-6 flex items-center justify-between transition-colors",
           theme === 'dark' ? "bg-black/80 border-zinc-800" : "bg-white/80 border-zinc-200"
         )}>
           <button 
@@ -279,7 +293,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
         </header>
 
         {/* Content Area */}
-        <div className="flex-1 p-3 lg:p-6">
+        <div className="flex-1 p-0">
           {children}
         </div>
       </main>

@@ -63,7 +63,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
                 country: 'Unknown'
               });
             } else {
-              setUserData(null);
+              setUserData({
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                name: firebaseUser.displayName || 'User',
+                role: 'user',
+                subscription_plan: 'none',
+                subscription_status: 'none',
+                country: 'India'
+              });
             }
           }
           setLoading(false);

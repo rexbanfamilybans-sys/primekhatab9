@@ -20,6 +20,9 @@ service cloud.firestore {
     // Collection: purchaseRequests
     // Fields: userId, userName, planId, planName, status, createdAt
     //
+    // Collection: redeemCodes
+    // Fields: code, planId, planName, maxUses, usedCount, usedBy, createdAt
+    //
     // ===============================================================
 
     // Helper Functions
@@ -48,9 +51,13 @@ service cloud.firestore {
     match /users/{userId} {
       allow read: if isOwner(userId) || isAdmin();
       allow create: if isAuthenticated() && request.auth.uid == userId && isValidUser(request.resource.data);
-      allow update: if isAdmin() || (isOwner(userId) && 
-                      request.resource.data.role == resource.data.role &&
-                      request.resource.data.uid == resource.data.uid);
+      allow update: if isAdmin() || (
+        isOwner(userId) && 
+        request.resource.data.role == resource.data.role &&
+        request.resource.data.uid == resource.data.uid &&
+        request.resource.data.subscription_status == resource.data.subscription_status &&
+        request.resource.data.subscription_plan == resource.data.subscription_plan
+      );
     }
 
     match /anime/{animeId} {
@@ -75,7 +82,23 @@ service cloud.firestore {
     }
 
     match /settings/{settingId} {
-      allow read, write: if isAdmin();
+      allow read: if isAuthenticated();
+      allow write: if isAdmin();
+    }
+
+    match /redeemCodes/{codeId} {
+      allow get: if isAuthenticated();
+      allow list: if isAdmin();
+      allow create: if isAdmin();
+      allow update: if isAdmin() || (
+        isAuthenticated() && 
+        request.resource.data.usedCount == resource.data.usedCount + 1 &&
+        request.resource.data.usedBy.size() == resource.data.usedBy.size() + 1 &&
+        request.resource.data.usedBy.hasAll(resource.data.usedBy) &&
+        request.auth.uid in request.resource.data.usedBy &&
+        !(request.auth.uid in resource.data.usedBy) &&
+        request.resource.data.usedCount <= resource.data.maxUses
+      );
     }
   }
 }

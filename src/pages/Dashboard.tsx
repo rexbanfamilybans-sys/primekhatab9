@@ -49,7 +49,7 @@ export const Dashboard: React.FC = () => {
   return (
     <div className="space-y-8">
       {/* Hero Section */}
-      <section className="relative h-[300px] lg:h-[400px] rounded-2xl overflow-hidden group">
+      <section className="relative h-[350px] lg:h-[500px] lg:rounded-2xl overflow-hidden group">
         <AnimatePresence mode="wait">
           <motion.div
             key={featured.id || 'default'}
@@ -65,29 +65,29 @@ export const Dashboard: React.FC = () => {
               className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
               referrerPolicy="no-referrer"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/40 to-transparent flex flex-col justify-end p-6 lg:p-10">
-              <div className="max-w-2xl space-y-3">
-                <div className="flex items-center gap-2 text-blue-500 font-bold text-xs uppercase tracking-widest">
-                  <TrendingUp className="w-3.5 h-3.5" />
+            <div className="absolute inset-0 bg-gradient-to-t from-black via-black/60 to-transparent flex flex-col justify-end p-4 lg:p-10">
+              <div className="max-w-2xl space-y-2 lg:space-y-3">
+                <div className="flex items-center gap-1.5 lg:gap-2 text-blue-500 font-bold text-[10px] lg:text-xs uppercase tracking-widest">
+                  <TrendingUp className="w-3 lg:w-3.5 h-3 lg:h-3.5" />
                   {featured.id ? 'New Release' : 'Featured'}
                 </div>
-                <h1 className="text-3xl lg:text-5xl font-black tracking-tighter text-white">
+                <h1 className="text-2xl lg:text-5xl font-black tracking-tighter text-white leading-tight">
                   {featured.title}
                 </h1>
-                <p className="text-zinc-300 text-sm line-clamp-2 max-w-xl">
+                <p className="text-zinc-300 text-xs lg:text-sm line-clamp-2 max-w-xl">
                   {featured.description}
                 </p>
-                <div className="flex items-center gap-3 pt-4">
+                <div className="flex items-center gap-3 pt-2 lg:pt-4">
                   {featured.id ? (
                     <Link 
                       to={`/anime/${featured.id}`}
-                      className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95 text-sm shadow-lg shadow-blue-600/20"
+                      className="bg-blue-600 hover:bg-blue-500 text-white px-6 lg:px-8 py-2.5 lg:py-3 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95 text-xs lg:text-sm shadow-lg shadow-blue-600/20"
                     >
-                      <Play className="w-4 h-4 fill-current" /> Watch Now
+                      <Play className="w-3.5 h-3.5 fill-current" /> Watch Now
                     </Link>
                   ) : (
-                    <button className="bg-blue-600 hover:bg-blue-500 text-white px-8 py-3 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95 text-sm shadow-lg shadow-blue-600/20">
-                      <Play className="w-4 h-4 fill-current" /> Explore
+                    <button className="bg-blue-600 hover:bg-blue-500 text-white px-6 lg:px-8 py-2.5 lg:py-3 rounded-xl font-bold flex items-center gap-2 transition-all active:scale-95 text-xs lg:text-sm shadow-lg shadow-blue-600/20">
+                      <Play className="w-3.5 h-3.5 fill-current" /> Explore
                     </button>
                   )}
                 </div>
@@ -114,18 +114,18 @@ export const Dashboard: React.FC = () => {
       </section>
 
       {/* Anime Grid */}
-      <section className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-2xl font-black flex items-center gap-3">
-            <Star className="w-6 h-6 text-yellow-500 fill-current" />
+      <section className="space-y-4 lg:space-y-6">
+        <div className="flex items-center justify-between gap-4">
+          <h2 className="text-lg lg:text-2xl font-black flex items-center gap-2 lg:gap-3">
+            <Star className="w-5 h-5 lg:w-6 lg:h-6 text-yellow-500 fill-current" />
             Recently Added
           </h2>
-          <Link to="/all" className="text-blue-500 hover:text-blue-400 font-bold text-sm flex items-center gap-1">
+          <Link to="/all" className="text-blue-500 hover:text-blue-400 font-bold text-[10px] lg:text-sm flex items-center gap-1 shrink-0">
             View All <TrendingUp className="w-4 h-4" />
           </Link>
         </div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-3 lg:gap-6">
           {animes.map((anime, index) => (
             <motion.div
               key={anime.id}
@@ -134,7 +134,7 @@ export const Dashboard: React.FC = () => {
               transition={{ delay: index * 0.05 }}
             >
               <Link to={`/anime/${anime.id}`} className="group block space-y-3">
-                <div className="relative aspect-[2/3] rounded-2xl overflow-hidden shadow-xl border border-zinc-200 dark:border-zinc-800">
+                <div className="relative aspect-[2/3] lg:rounded-2xl overflow-hidden shadow-xl border border-zinc-200 dark:border-zinc-800">
                   <img 
                     src={anime.posterUrl} 
                     alt={anime.title}
