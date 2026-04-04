@@ -69,12 +69,22 @@ export const AdOverlay: React.FC<AdOverlayProps> = ({ onClose, isVisible }) => {
 
         {/* Ad Content Area */}
         <div className="w-full max-w-4xl aspect-video bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-2xl flex items-center justify-center relative group">
+          {/* Real AdSense Ad Unit */}
           <ins className="adsbygoogle"
                style={{ display: 'block', width: '100%', height: '100%' }}
                data-ad-client="ca-pub-1698954746273329"
                data-ad-slot="video_overlay_slot"
                data-ad-format="auto"
                data-full-width-responsive="true"></ins>
+          
+          {/* Visual Placeholder (Visible only if ad is blocked or loading) */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/50 border-2 border-dashed border-zinc-800 rounded-2xl m-4 pointer-events-none">
+            <div className="w-16 h-16 bg-zinc-900 rounded-2xl flex items-center justify-center mb-4">
+              <Play className="w-8 h-8 text-zinc-700 fill-current" />
+            </div>
+            <p className="text-zinc-500 font-bold text-sm">Google AdSense Space</p>
+            <p className="text-zinc-700 text-[10px] mt-1 uppercase tracking-widest">Ads will appear here on your approved domain</p>
+          </div>
           
           {!canClose && (
             <div className="absolute inset-0 bg-black/20 pointer-events-none group-hover:bg-transparent transition-colors" />
