@@ -22,6 +22,7 @@ import { signOut } from 'firebase/auth';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Moon } from 'lucide-react';
+import { AdManager } from './AdManager';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
@@ -55,6 +56,7 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
       "min-h-screen flex transition-colors duration-300",
       theme === 'dark' ? "bg-black text-white" : "bg-white text-zinc-900"
     )}>
+      <AdManager />
       {/* Sidebar - Desktop */}
       <aside className={cn(
         "fixed inset-y-0 left-0 z-50 w-64 border-r transition-transform duration-300 lg:translate-x-0",

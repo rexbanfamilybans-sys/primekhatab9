@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { X, Play } from 'lucide-react';
-import { cn } from '../lib/utils';
+import { useAuth } from '../context/AuthContext';
 
 interface AdOverlayProps {
   onClose: () => void;
@@ -8,11 +8,14 @@ interface AdOverlayProps {
 }
 
 export const AdOverlay: React.FC<AdOverlayProps> = ({ onClose, isVisible }) => {
+  const { userData } = useAuth();
   const [countdown, setCountdown] = useState(10);
   const [canClose, setCanClose] = useState(false);
 
+  const isPremium = userData?.subscription_status === 'active';
+
   useEffect(() => {
-    if (isVisible) {
+    if (isVisible && !isPremium) {
       setCountdown(10);
       setCanClose(false);
       
@@ -29,9 +32,9 @@ export const AdOverlay: React.FC<AdOverlayProps> = ({ onClose, isVisible }) => {
 
       return () => clearInterval(timer);
     }
-  }, [isVisible]);
+  }, [isVisible, isPremium]);
 
-  if (!isVisible) return null;
+  if (!isVisible || isPremium) return null;
 
   return (
     <div className="absolute inset-0 z-[60] flex items-center justify-center bg-black/95 backdrop-blur-md animate-in fade-in duration-500">
@@ -64,8 +67,11 @@ export const AdOverlay: React.FC<AdOverlayProps> = ({ onClose, isVisible }) => {
         <div className="w-full max-w-4xl aspect-video bg-zinc-900 rounded-2xl border border-zinc-800 overflow-hidden shadow-2xl flex items-center justify-center relative group">
           {/* Ad Network Container */}
           <div id="ad-container" className="w-full h-full flex items-center justify-center">
+            {/* Native Banner Container */}
+            <div id="container-c1aee88fc648fa4a6774370858ee2983" className="w-full h-full"></div>
+
             {/* Visual Placeholder (Visible only if ad is blocked or loading) */}
-            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/50 border-2 border-dashed border-zinc-800 rounded-2xl m-4 pointer-events-none">
+            <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950/50 border-2 border-dashed border-zinc-800 rounded-2xl m-4 pointer-events-none -z-10">
               <div className="w-16 h-16 bg-zinc-900 rounded-2xl flex items-center justify-center mb-4">
                 <Play className="w-8 h-8 text-zinc-700 fill-current" />
               </div>
@@ -84,15 +90,25 @@ export const AdOverlay: React.FC<AdOverlayProps> = ({ onClose, isVisible }) => {
           <p className="text-white/40 text-[10px] font-bold uppercase tracking-[0.2em]">
             Support sahidanime by watching this short ad
           </p>
-          {canClose && (
-            <button 
-              onClick={onClose}
-              className="bg-blue-600 hover:bg-blue-500 text-white px-12 py-3 rounded-2xl font-black text-sm transition-all active:scale-95 shadow-2xl shadow-blue-600/40 flex items-center gap-2 mx-auto"
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <a 
+              href="https://www.profitablecpmratenetwork.com/s62w01hmq2?key=2155158c4f8e3efe7444c6fa5fa13530"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-zinc-800 hover:bg-zinc-700 text-white px-8 py-3 rounded-2xl font-bold text-sm transition-all active:scale-95 flex items-center gap-2"
             >
-              Continue to Video
-              <X className="w-4 h-4" />
-            </button>
-          )}
+              Visit Sponsor
+            </a>
+            {canClose && (
+              <button 
+                onClick={onClose}
+                className="bg-blue-600 hover:bg-blue-500 text-white px-12 py-3 rounded-2xl font-black text-sm transition-all active:scale-95 shadow-2xl shadow-blue-600/40 flex items-center gap-2"
+              >
+                Continue to Video
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     </div>
