@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import { doc, getDoc, collection, query, orderBy, onSnapshot, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { VideoPlayer } from '../components/VideoPlayer';
+import { AdOverlay } from '../components/AdOverlay';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { Play, Lock, Crown, Info, List, Star, Share2, Plus, X, Globe, CreditCard, Loader2, Zap, ArrowRight, Upload } from 'lucide-react';
@@ -41,6 +42,20 @@ export const AnimeDetails: React.FC = () => {
   const [transactionId, setTransactionId] = useState('');
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showAd, setShowAd] = useState(false);
+
+  const isPremium = userData?.subscription_status === 'active' || userData?.role === 'admin';
+
+  useEffect(() => {
+    if (!selectedEpisode || isPremium) return;
+
+    // Show ad every 2.5 minutes (150 seconds)
+    const adInterval = setInterval(() => {
+      setShowAd(true);
+    }, 150000); 
+
+    return () => clearInterval(adInterval);
+  }, [selectedEpisode, isPremium]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -178,13 +193,17 @@ export const AnimeDetails: React.FC = () => {
   return (
     <div className="max-w-6xl mx-auto space-y-6 pb-20">
       {/* 1. Video Player Section (Top) */}
-      <div className="bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl border border-zinc-800">
+      <div className="bg-zinc-900 rounded-2xl overflow-hidden shadow-2xl border border-zinc-800 relative">
         {selectedEpisode ? (
-          <div className="aspect-video">
+          <div className="aspect-video relative">
             <VideoPlayer 
               key={selectedEpisode.id}
               src={selectedEpisode.videoUrl} 
               title={`${anime?.title} - Episode ${selectedEpisode.order}`} 
+            />
+            <AdOverlay 
+              isVisible={showAd} 
+              onClose={() => setShowAd(false)} 
             />
           </div>
         ) : (

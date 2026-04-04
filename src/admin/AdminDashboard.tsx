@@ -13,15 +13,18 @@ import {
   LayoutDashboard,
   Film,
   CreditCard,
-  Bell
+  Bell,
+  PlayCircle
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { useAuth } from '../context/AuthContext';
+import { AdOverlay } from '../components/AdOverlay';
 
 export const AdminDashboard: React.FC = () => {
   const { user, userData } = useAuth();
+  const [showAdTest, setShowAdTest] = useState(false);
   const [stats, setStats] = useState({
     totalUsers: 0,
     premiumUsers: 0,
@@ -183,6 +186,18 @@ export const AdminDashboard: React.FC = () => {
                 <p className="text-sm text-zinc-500">Configure Telegram notifications</p>
               </div>
             </Link>
+            <button 
+              onClick={() => setShowAdTest(true)}
+              className="p-6 bg-zinc-900/50 border border-zinc-800 rounded-3xl flex items-center gap-6 hover:bg-zinc-900 hover:border-yellow-500/50 transition-all group text-left"
+            >
+              <div className="w-14 h-14 bg-yellow-500/10 rounded-2xl flex items-center justify-center group-hover:scale-110 transition-transform">
+                <PlayCircle className="w-7 h-7 text-yellow-500" />
+              </div>
+              <div className="space-y-1">
+                <h3 className="font-bold text-lg">Test AdSense</h3>
+                <p className="text-sm text-zinc-500">Verify if ads are showing correctly</p>
+              </div>
+            </button>
           </div>
         </div>
 
@@ -204,6 +219,11 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      <AdOverlay 
+        isVisible={showAdTest} 
+        onClose={() => setShowAdTest(false)} 
+      />
     </div>
   );
 };

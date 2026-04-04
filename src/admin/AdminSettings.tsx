@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, deleteDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
+import { initializeApp } from 'firebase/app';
+import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
+import firebaseConfig from '../../firebase-applet-config.json';
 import { 
   Send, 
   Save, 
@@ -9,11 +12,20 @@ import {
   Bell, 
   MessageSquare,
   ExternalLink,
-  CheckCircle2
+  CheckCircle2,
+  UserPlus,
+  Lock,
+  Mail,
+  User,
+  AlertTriangle,
+  ArrowRight,
+  Eye,
+  EyeOff
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { cn } from '../lib/utils';
 
 interface TelegramConfig {
   botToken: string;
@@ -31,6 +43,14 @@ export const AdminSettings: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [testing, setTesting] = useState(false);
+  const [isMigrating, setIsMigrating] = useState(false);
+  const [showMigrateModal, setShowMigrateModal] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [newAdmin, setNewAdmin] = useState({
+    email: '',
+    password: '',
+    name: ''
+  });
 
   useEffect(() => {
     const isAdmin = userData?.role === 'admin';
@@ -98,6 +118,61 @@ export const AdminSettings: React.FC = () => {
       toast.error(`Test failed: ${error.message}`);
     } finally {
       setTesting(false);
+    }
+  };
+
+  const handleMigrateAdmin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newAdmin.email || !newAdmin.password || !newAdmin.name) {
+      return toast.error("Please fill in all fields");
+    }
+
+    if (!window.confirm("CRITICAL WARNING: This will create a new admin and DELETE your current admin database record. You will be logged out and must log in with the new credentials. Continue?")) return;
+
+    setIsMigrating(true);
+    try {
+      // 1. Create new admin via secondary app
+      const secondaryApp = initializeApp(firebaseConfig, 'MigrationApp');
+      const secondaryAuth = getAuth(secondaryApp);
+      
+      const userCredential = await createUserWithEmailAndPassword(
+        secondaryAuth, 
+        newAdmin.email, 
+        newAdmin.password
+      );
+      
+      const newUser = userCredential.user;
+      
+      // 2. Create new admin document
+      await setDoc(doc(db, 'users', newUser.uid), {
+        uid: newUser.uid,
+        email: newAdmin.email,
+        name: newAdmin.name,
+        role: 'admin',
+        subscription_status: 'none',
+        subscription_plan: 'none',
+        country: 'Unknown',
+        createdAt: serverTimestamp()
+      });
+
+      // 3. Delete current admin document (Firestore only)
+      if (user?.uid) {
+        await deleteDoc(doc(db, 'users', user.uid));
+      }
+
+      // 4. Clean up and logout
+      await signOut(secondaryAuth);
+      toast.success("Admin migration successful! Logging you out...");
+      
+      setTimeout(() => {
+        window.location.href = '/login';
+      }, 2000);
+
+    } catch (error: any) {
+      console.error("Migration Error:", error);
+      toast.error(`Migration failed: ${error.message}`);
+    } finally {
+      setIsMigrating(false);
     }
   };
 
@@ -201,6 +276,109 @@ export const AdminSettings: React.FC = () => {
               {testing ? <Loader2 className="w-5 h-5 animate-spin" /> : <><CheckCircle2 className="w-5 h-5" /> Test Connection</>}
             </button>
           </div>
+        </motion.div>
+
+        {/* Admin Migration Card */}
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="bg-zinc-900/50 border border-zinc-800 rounded-[2.5rem] p-8 space-y-8"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 bg-purple-500/10 rounded-2xl flex items-center justify-center">
+                <Shield className="w-6 h-6 text-purple-500" />
+              </div>
+              <div>
+                <h2 className="text-xl font-bold">Admin Migration</h2>
+                <p className="text-sm text-zinc-500">Transfer ownership to a new account</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="bg-purple-500/5 border border-purple-500/10 rounded-2xl p-6 flex gap-4">
+            <AlertTriangle className="w-6 h-6 text-purple-500 shrink-0 mt-1" />
+            <div className="space-y-2">
+              <p className="text-sm font-bold text-purple-500">Danger Zone</p>
+              <p className="text-xs text-zinc-400 leading-relaxed">
+                This tool allows you to create a brand new admin account and automatically <strong>delete your current admin record</strong> from the database. Use this only when you want to change your primary admin email/password.
+              </p>
+            </div>
+          </div>
+
+          <form onSubmit={handleMigrateAdmin} className="grid gap-6">
+            <div className="grid md:grid-cols-3 gap-6">
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-zinc-500 ml-1">New Admin Name</label>
+                <div className="relative group">
+                  <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-purple-500 transition-colors" />
+                  <input 
+                    type="text"
+                    required
+                    placeholder="Master Admin"
+                    value={newAdmin.name}
+                    onChange={(e) => setNewAdmin({ ...newAdmin, name: e.target.value })}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-purple-500 transition-all"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-zinc-500 ml-1">New Admin Email</label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-purple-500 transition-colors" />
+                  <input 
+                    type="email"
+                    required
+                    placeholder="new-admin@rex.com"
+                    value={newAdmin.email}
+                    onChange={(e) => setNewAdmin({ ...newAdmin, email: e.target.value })}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 pl-12 pr-4 text-sm focus:outline-none focus:border-purple-500 transition-all"
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <label className="text-xs font-black uppercase tracking-widest text-zinc-500 ml-1">New Admin Password</label>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-500 group-focus-within:text-purple-500 transition-colors" />
+                  <input 
+                    type={showPassword ? "text" : "password"}
+                    required
+                    placeholder="••••••••"
+                    value={newAdmin.password}
+                    onChange={(e) => setNewAdmin({ ...newAdmin, password: e.target.value })}
+                    className="w-full bg-zinc-950 border border-zinc-800 rounded-2xl py-3 pl-12 pr-12 text-sm focus:outline-none focus:border-purple-500 transition-all"
+                    minLength={6}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-4 top-1/2 -translate-y-1/2 p-1 text-zinc-500 hover:text-white transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={isMigrating}
+              className="w-full bg-purple-600 hover:bg-purple-500 text-white py-4 rounded-2xl font-black flex items-center justify-center gap-2 transition-all active:scale-95 disabled:opacity-50 shadow-xl shadow-purple-600/20"
+            >
+              {isMigrating ? (
+                <>
+                  <Loader2 className="w-5 h-5 animate-spin" />
+                  Migrating Admin...
+                </>
+              ) : (
+                <>
+                  <ArrowRight className="w-5 h-5" />
+                  Create New Admin & Delete Current
+                </>
+              )}
+            </button>
+          </form>
         </motion.div>
       </div>
     </div>

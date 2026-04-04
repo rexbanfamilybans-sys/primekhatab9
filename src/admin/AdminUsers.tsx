@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, getDocs, doc, updateDoc, where, orderBy } from 'firebase/firestore';
+import { collection, query, getDocs, doc, updateDoc, where, orderBy, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { initializeApp } from 'firebase/app';
 import { getAuth, createUserWithEmailAndPassword, signOut } from 'firebase/auth';
@@ -124,6 +124,22 @@ export const AdminUsers: React.FC = () => {
     } catch (error) {
       console.error("Error updating role:", error);
       toast.error("Failed to update user role");
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    if (!window.confirm("Are you sure you want to delete this user? This will remove their data from the database. Note: The authentication account will remain until manually removed from Firebase Console.")) return;
+
+    try {
+      setUpdatingId(userId);
+      await deleteDoc(doc(db, 'users', userId));
+      setUsers(prev => prev.filter(u => u.id !== userId));
+      toast.success("User deleted successfully");
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      toast.error("Failed to delete user");
     } finally {
       setUpdatingId(null);
     }
@@ -341,6 +357,18 @@ export const AdminUsers: React.FC = () => {
                             <Loader2 className="w-4 h-4 animate-spin" />
                           ) : (
                             <Shield className="w-4 h-4" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDeleteUser(u.id)}
+                          disabled={updatingId === u.id || u.id === currentUser?.uid}
+                          className="p-2 text-zinc-500 hover:text-red-500 hover:bg-red-500/10 rounded-xl transition-all"
+                          title="Delete User"
+                        >
+                          {updatingId === u.id ? (
+                            <Loader2 className="w-4 h-4 animate-spin" />
+                          ) : (
+                            <UserX className="w-4 h-4" />
                           )}
                         </button>
                       </div>

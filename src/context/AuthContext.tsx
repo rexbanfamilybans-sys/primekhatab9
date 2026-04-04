@@ -44,10 +44,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         const userDocRef = doc(db, 'users', firebaseUser.uid);
         unsubDoc = onSnapshot(userDocRef, (docSnap) => {
           if (docSnap.exists()) {
-            setUserData(docSnap.data() as UserData);
+            const data = docSnap.data() as UserData;
+            // Fail-safe for master admins
+            if (firebaseUser.email === 'mrkhatab112@gmail.com' || firebaseUser.email === 'admin@rex.com') {
+              data.role = 'admin';
+            }
+            setUserData(data);
           } else {
-            // Document might not exist yet during signup
-            setUserData(null);
+            // Fail-safe for master admins if document is missing
+            if (firebaseUser.email === 'mrkhatab112@gmail.com' || firebaseUser.email === 'admin@rex.com') {
+              setUserData({
+                uid: firebaseUser.uid,
+                email: firebaseUser.email || '',
+                name: firebaseUser.displayName || 'Master Admin',
+                role: 'admin',
+                subscription_plan: 'none',
+                subscription_status: 'none',
+                country: 'Unknown'
+              });
+            } else {
+              setUserData(null);
+            }
           }
           setLoading(false);
           setIsAuthReady(true);
