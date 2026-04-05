@@ -462,15 +462,6 @@ export const AdminAnime: React.FC = () => {
                 <ListPlus className="w-6 h-6 text-blue-500" />
                 Episodes List
               </h2>
-              {animeEpisodes.length > 0 && (
-                <button 
-                  onClick={() => handleDeleteAllEpisodes(showEpisodeList)}
-                  className="px-4 py-2 bg-red-600/10 text-red-500 rounded-xl hover:bg-red-600 hover:text-white transition-all text-xs font-bold flex items-center gap-2"
-                >
-                  <Trash2 className="w-4 h-4" />
-                  Delete All
-                </button>
-              )}
             </div>
             
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">

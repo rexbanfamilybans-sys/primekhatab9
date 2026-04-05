@@ -393,10 +393,19 @@ export const AnimeDetails: React.FC = () => {
                 {selectedEpisode?.downloadUrl && (
                   <button 
                     onClick={handleDownload}
-                    className="flex items-center gap-2 px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-black text-sm transition-all active:scale-95 shadow-lg shadow-green-600/20"
+                    className="group relative flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-2xl font-black text-sm transition-all active:scale-95 shadow-xl shadow-green-600/20 overflow-hidden"
                   >
-                    <Download className="w-5 h-5" />
-                    <span>Download</span>
+                    <div className="absolute -top-1 -right-1 bg-white text-green-600 px-2 py-0.5 rounded-bl-lg text-[8px] font-black tracking-tighter uppercase shadow-sm z-10">
+                      4K Ultra
+                    </div>
+                    <div className="relative">
+                      <Download className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" />
+                      <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                    <div className="flex flex-col items-start leading-none">
+                      <span className="text-[10px] text-green-100 font-bold uppercase tracking-widest mb-0.5">Direct Link</span>
+                      <span>Download Now</span>
+                    </div>
                   </button>
                 )}
               </div>
