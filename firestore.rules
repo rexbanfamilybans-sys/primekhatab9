@@ -120,6 +120,7 @@ service cloud.firestore {
         !(request.auth.uid in resource.data.usedBy) &&
         request.resource.data.usedCount <= resource.data.maxUses
       );
+      allow delete: if isAdmin();
     }
 
     match /notifications/{notificationId} {

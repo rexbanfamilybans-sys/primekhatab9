@@ -110,13 +110,21 @@ export const AdminRedeemCodes: React.FC = () => {
     }
   };
 
+  const [deletingCodeId, setDeletingCodeId] = useState<string | null>(null);
+
   const handleDeleteCode = async (id: string) => {
-    if (!window.confirm('Are you sure you want to delete this code?')) return;
+    setDeletingCodeId(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!deletingCodeId) return;
     try {
-      await deleteDoc(doc(db, 'redeemCodes', id));
+      await deleteDoc(doc(db, 'redeemCodes', deletingCodeId));
       toast.success('Code deleted successfully');
     } catch (error: any) {
       toast.error('Failed to delete code: ' + error.message);
+    } finally {
+      setDeletingCodeId(null);
     }
   };
 
@@ -218,6 +226,42 @@ export const AdminRedeemCodes: React.FC = () => {
           ))}
         </div>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <AnimatePresence>
+        {deletingCodeId && (
+          <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              className="bg-zinc-900 border border-zinc-800 rounded-[2rem] p-8 w-full max-w-sm text-center space-y-6"
+            >
+              <div className="w-16 h-16 bg-red-500/10 rounded-2xl flex items-center justify-center mx-auto">
+                <AlertCircle className="w-8 h-8 text-red-500" />
+              </div>
+              <div className="space-y-2">
+                <h2 className="text-xl font-black">Delete Code?</h2>
+                <p className="text-zinc-500 text-sm">This action cannot be undone. Are you sure you want to delete this redeem code?</p>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  onClick={() => setDeletingCodeId(null)}
+                  className="flex-1 px-6 py-3 bg-zinc-800 hover:bg-zinc-700 text-white rounded-xl font-bold transition-all"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmDelete}
+                  className="flex-1 px-6 py-3 bg-red-600 hover:bg-red-500 text-white rounded-xl font-bold transition-all"
+                >
+                  Delete
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* Add Code Modal */}
       <AnimatePresence>

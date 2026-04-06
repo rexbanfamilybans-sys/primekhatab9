@@ -1,6 +1,8 @@
-const OPENROUTER_API_KEY = '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';
+const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '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';
 const SITE_URL = window.location.origin;
 const SITE_NAME = 'SahidAnime';
+
+const DEFAULT_MODEL = "google/gemini-2.0-flash-lite-preview-02-05";
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -18,7 +20,7 @@ export const chatWithAI = async (messages: ChatMessage[]) => {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        "model": "google/gemini-2.5-flash-lite",
+        "model": DEFAULT_MODEL,
         "messages": messages
       })
     });
@@ -82,7 +84,7 @@ export const analyzePaymentScreenshot = async (base64Image: string, planDetails:
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        "model": "google/gemini-2.5-flash-lite",
+        "model": DEFAULT_MODEL,
         "messages": messages
       })
     });
