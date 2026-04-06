@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
-import { Crown, Check, ShieldCheck, Zap, Star, Loader2, Globe, CreditCard, X, ArrowRight, Upload } from 'lucide-react';
+import { Crown, Check, ShieldCheck, Zap, Star, Loader2, Globe, CreditCard, X, ArrowRight, Upload, Sparkles } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { toast } from 'react-hot-toast';
+import { motion, AnimatePresence } from 'framer-motion';
 
 import { PLANS, PAYMENT_METHODS } from '../constants';
 import { sendTelegramNotification } from '../services/telegramService';
+import { analyzePaymentScreenshot } from '../services/aiService';
 
 export const Premium: React.FC = () => {
   const { userData, user } = useAuth();
@@ -17,6 +19,9 @@ export const Premium: React.FC = () => {
   const [transactionId, setTransactionId] = useState('');
   const [screenshot, setScreenshot] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [aiStatus, setAiStatus] = useState<string | null>(null);
+  const [verificationStatus, setVerificationStatus] = useState<'idle' | 'success' | 'fail'>('idle');
+  const [failReason, setFailReason] = useState('');
 
   useEffect(() => {
     const detectCountry = async () => {
@@ -64,35 +69,102 @@ export const Premium: React.FC = () => {
     if (!user || !userData) return toast.error('Please login first');
     
     setIsSubmitting(true);
+    setAiStatus('AI is scanning your payment...');
     try {
       const planPrice = selectedPlan.prices[countryCode] || selectedPlan.prices.DEFAULT;
-      await addDoc(collection(db, 'purchaseRequests'), {
-        userId: user.uid,
-        userName: userData.name || 'Anonymous',
-        userEmail: userData.email,
-        planId: selectedPlan.id,
-        planName: selectedPlan.name,
-        amount: planPrice.amount.toString(),
-        currency: planPrice.currency,
-        country: countryCode,
-        transactionId: 'SCREENSHOT_ONLY', // Placeholder since input is removed
-        screenshot: screenshot,
-        status: 'pending',
-        createdAt: serverTimestamp()
-      });
+      const planDetails = `Plan: ${selectedPlan.name}, Price: ${planPrice.symbol}${planPrice.amount}, Duration: ${planPrice.duration}`;
+      
+      // AI Analysis
+      const aiResult = await analyzePaymentScreenshot(screenshot, planDetails);
+      
+      if (aiResult.includes('APPROVED')) {
+        setVerificationStatus('success');
+        setAiStatus('Payment Verified! Activating your subscription...');
+        
+        // 1. Update User Subscription
+        await updateDoc(doc(db, 'users', user.uid), {
+          subscription_plan: selectedPlan.id,
+          subscription_status: 'active',
+          subscription_updated_at: serverTimestamp(),
+          subscription_method: 'ai_auto'
+        });
 
-      // Send Telegram Notification
-      const telegramMessage = `ðŸ’° *New Purchase Request*\n\nâœ… *User:* ${userData.name || 'Anonymous'}\nðŸ“§ *Email:* ${userData.email}\nðŸ“¦ *Plan:* ${selectedPlan.name}\nðŸ’µ *Amount:* ${planPrice.symbol}${planPrice.amount}\nðŸŒŽ *Country:* ${countryCode}\nâ³ *Status:* Pending Approval`;
-      await sendTelegramNotification(telegramMessage);
+        // 2. Save Approved Request
+        await addDoc(collection(db, 'purchaseRequests'), {
+          userId: user.uid,
+          userName: userData.name || 'Anonymous',
+          userEmail: userData.email,
+          planId: selectedPlan.id,
+          planName: selectedPlan.name,
+          amount: planPrice.amount.toString(),
+          currency: planPrice.currency,
+          country: countryCode,
+          transactionId: 'AI_AUTO_APPROVED',
+          screenshot: screenshot,
+          status: 'approved',
+          createdAt: serverTimestamp()
+        });
 
-      toast.success('Request submitted! Admin will approve it soon.');
-      setSelectedPlan(null);
-      setTransactionId('');
-      setScreenshot(null);
+        // 3. Create Notification
+        await addDoc(collection(db, 'notifications'), {
+          userId: user.uid,
+          title: 'Subscription Activated! 🎉',
+          message: `Congratulations! Your ${selectedPlan.name} plan is now active. Enjoy ad-free anime!`,
+          type: 'success',
+          read: false,
+          createdAt: serverTimestamp()
+        });
+
+        // 4. Telegram Notification
+        const telegramMessage = `🚀 *AI AUTO-APPROVED*\n\n✅ *User:* ${userData.name || 'Anonymous'}\n📧 *Email:* ${userData.email}\n📦 *Plan:* ${selectedPlan.name}\n💰 *Amount:* ${planPrice.symbol}${planPrice.amount}\n🌍 *Country:* ${countryCode}\n✨ *Status:* Activated by AI`;
+        await sendTelegramNotification(telegramMessage);
+
+        toast.success('Payment Verified! Your subscription is now active.');
+        
+        setTimeout(() => {
+          setVerificationStatus('idle');
+          setSelectedPlan(null);
+          setScreenshot(null);
+        }, 3000);
+      } else {
+        setVerificationStatus('fail');
+        setFailReason(aiResult);
+        setAiStatus(null);
+        toast.error(`AI Rejected Payment: ${aiResult}`);
+        
+        // Save Rejected Request for Admin Review
+        await addDoc(collection(db, 'purchaseRequests'), {
+          userId: user.uid,
+          userName: userData.name || 'Anonymous',
+          userEmail: userData.email,
+          planId: selectedPlan.id,
+          planName: selectedPlan.name,
+          amount: planPrice.amount.toString(),
+          currency: planPrice.currency,
+          country: countryCode,
+          transactionId: 'AI_REJECTED',
+          screenshot: screenshot,
+          status: 'rejected',
+          aiReason: aiResult,
+          createdAt: serverTimestamp()
+        });
+
+        // Create Notification
+        await addDoc(collection(db, 'notifications'), {
+          userId: user.uid,
+          title: 'Verification Failed ❌',
+          message: `AI could not verify your payment. Reason: ${aiResult}. Please try again with a clear screenshot.`,
+          type: 'error',
+          read: false,
+          createdAt: serverTimestamp()
+        });
+      }
     } catch (error: any) {
-      toast.error('Failed to submit request: ' + error.message);
+      setAiStatus(null);
+      toast.error('Verification failed: ' + error.message);
     } finally {
       setIsSubmitting(false);
+      setAiStatus(null);
     }
   };
 
@@ -290,13 +362,21 @@ export const Premium: React.FC = () => {
             <button 
               disabled={isSubmitting || !screenshot}
               onClick={handleSubmitRequest}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black text-sm transition-all active:scale-95 disabled:opacity-50 flex items-center justify-center gap-2 shadow-xl shadow-blue-600/20 relative z-10"
+              className="w-full bg-blue-600 hover:bg-blue-700 text-white py-4 rounded-2xl font-black text-sm transition-all active:scale-95 disabled:opacity-50 flex flex-col items-center justify-center gap-1 shadow-xl shadow-blue-600/20 relative z-10"
             >
-              {isSubmitting ? <Loader2 className="w-5 h-5 animate-spin" /> : (
-                <>
-                  Submit Payment Request
-                  <ArrowRight className="w-4 h-4" />
-                </>
+              {isSubmitting ? (
+                <div className="flex flex-col items-center gap-2">
+                  <div className="flex items-center gap-2">
+                    <Loader2 className="w-5 h-5 animate-spin" />
+                    <span>Processing...</span>
+                  </div>
+                  {aiStatus && <span className="text-[10px] text-blue-200 font-bold animate-pulse">{aiStatus}</span>}
+                </div>
+              ) : (
+                <div className="flex items-center gap-2">
+                  Submit & Verify with AI
+                  <Sparkles className="w-4 h-4" />
+                </div>
               )}
             </button>
           </div>
@@ -333,6 +413,57 @@ export const Premium: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Verification Overlays */}
+      <AnimatePresence>
+        {verificationStatus === 'success' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-blue-600 flex flex-col items-center justify-center text-white p-6 text-center"
+          >
+            <motion.div
+              initial={{ scale: 0.5, rotate: -20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-6"
+            >
+              <Check className="w-12 h-12 text-white" />
+            </motion.div>
+            <h2 className="text-4xl font-black mb-2">CONGRATULATIONS!</h2>
+            <p className="text-xl font-bold opacity-90">Payment Verified! Your subscription is now active.</p>
+            <Sparkles className="w-8 h-8 mt-6 animate-pulse" />
+          </motion.div>
+        )}
+
+        {verificationStatus === 'fail' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[200] bg-red-600 flex flex-col items-center justify-center text-white p-6 text-center"
+          >
+            <motion.div
+              initial={{ scale: 0.5, rotate: 20 }}
+              animate={{ scale: 1, rotate: 0 }}
+              className="w-24 h-24 bg-white/20 rounded-full flex items-center justify-center mb-6"
+            >
+              <X className="w-12 h-12 text-white" />
+            </motion.div>
+            <h2 className="text-4xl font-black mb-2">VERIFICATION FAILED</h2>
+            <p className="text-xl font-bold opacity-90 mb-4">{failReason}</p>
+            <p className="text-sm font-medium bg-black/20 px-4 py-2 rounded-xl">
+              Please pay the correct amount and provide a clear screenshot.
+            </p>
+            <button 
+              onClick={() => setVerificationStatus('idle')}
+              className="mt-8 px-8 py-3 bg-white text-red-600 font-black rounded-2xl hover:scale-105 transition-transform"
+            >
+              Try Again
+            </button>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

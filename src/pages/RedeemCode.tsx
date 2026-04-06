@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { collection, query, where, getDocs, updateDoc, doc, arrayUnion, increment, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, arrayUnion, increment, serverTimestamp, writeBatch } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -32,15 +32,15 @@ export const RedeemCode: React.FC = () => {
 
     setIsRedeeming(true);
     try {
-      const q = query(collection(db, 'redeemCodes'), where('code', '==', code.trim().toUpperCase()));
-      const snapshot = await getDocs(q);
+      const codeId = code.trim().toUpperCase();
+      const codeRef = doc(db, 'redeemCodes', codeId);
+      const codeSnapshot = await getDoc(codeRef);
 
-      if (snapshot.empty) {
+      if (!codeSnapshot.exists()) {
         throw new Error('Invalid redeem code');
       }
 
-      const codeDoc = snapshot.docs[0];
-      const codeData = codeDoc.data();
+      const codeData = codeSnapshot.data();
 
       if (codeData.usedCount >= codeData.maxUses) {
         throw new Error('This code has reached its maximum usage limit');
@@ -50,19 +50,23 @@ export const RedeemCode: React.FC = () => {
         throw new Error('You have already redeemed this code');
       }
 
+      const batch = writeBatch(db);
+
       // Update code usage
-      await updateDoc(doc(db, 'redeemCodes', codeDoc.id), {
+      batch.update(codeRef, {
         usedCount: increment(1),
         usedBy: arrayUnion(user.uid)
       });
 
       // Update user subscription
-      await updateDoc(doc(db, 'users', user.uid), {
+      batch.update(doc(db, 'users', user.uid), {
         subscription_plan: codeData.planId,
         subscription_status: 'active',
         subscription_method: 'coupon',
         subscription_updated_at: serverTimestamp()
       });
+
+      await batch.commit();
 
       setRedeemedPlan(codeData.planName);
       setSuccess(true);

@@ -56,8 +56,15 @@ service cloud.firestore {
         isOwner(userId) && 
         request.resource.data.role == resource.data.role &&
         request.resource.data.uid == resource.data.uid &&
-        request.resource.data.subscription_status == resource.data.subscription_status &&
-        request.resource.data.subscription_plan == resource.data.subscription_plan
+        (
+          // Allow owner to update subscription if using a coupon or AI auto-approval
+          ((request.resource.data.get('subscription_method', '') == 'coupon' || request.resource.data.get('subscription_method', '') == 'ai_auto') && 
+           request.resource.data.get('subscription_status', '') == 'active' &&
+           request.resource.data.diff(resource.data).affectedKeys().hasOnly(['subscription_plan', 'subscription_status', 'subscription_method', 'subscription_updated_at'])) ||
+          // Otherwise, subscription fields must remain unchanged
+          (request.resource.data.get('subscription_status', '') == resource.data.get('subscription_status', '') &&
+           request.resource.data.get('subscription_plan', '') == resource.data.get('subscription_plan', ''))
+        )
       );
       allow delete: if isAdmin();
     }
@@ -105,6 +112,7 @@ service cloud.firestore {
       allow create: if isAdmin();
       allow update: if isAdmin() || (
         isAuthenticated() && 
+        request.resource.data.diff(resource.data).affectedKeys().hasOnly(['usedCount', 'usedBy']) &&
         request.resource.data.usedCount == resource.data.usedCount + 1 &&
         request.resource.data.usedBy.size() == resource.data.usedBy.size() + 1 &&
         request.resource.data.usedBy.hasAll(resource.data.usedBy) &&
@@ -112,6 +120,13 @@ service cloud.firestore {
         !(request.auth.uid in resource.data.usedBy) &&
         request.resource.data.usedCount <= resource.data.maxUses
       );
+    }
+
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && request.auth.uid == resource.data.userId;
+      allow create: if isAdmin();
+      allow update: if isAuthenticated() && request.auth.uid == resource.data.userId && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['read']);
+      allow delete: if isAuthenticated() && request.auth.uid == resource.data.userId;
     }
   }
 }

@@ -95,6 +95,9 @@ export const Login: React.FC = () => {
       navigate('/');
     } catch (error: any) {
       toast.error(error.message);
+      if (isLogin) {
+        setIsLogin(false); // Switch to register mode if login fails
+      }
     } finally {
       setLoading(false);
     }

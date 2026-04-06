@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { collection, query, onSnapshot, addDoc, deleteDoc, doc, serverTimestamp, orderBy } from 'firebase/firestore';
+import { collection, query, onSnapshot, setDoc, deleteDoc, doc, serverTimestamp, orderBy, getDoc } from 'firebase/firestore';
 import { db } from '../firebase/firebase';
 import { 
   Ticket, 
@@ -81,9 +81,18 @@ export const AdminRedeemCodes: React.FC = () => {
 
     setIsSubmitting(true);
     try {
+      const codeId = newCode.code.trim().toUpperCase();
+      const codeRef = doc(db, 'redeemCodes', codeId);
+      
+      // Check if code already exists
+      const existingDoc = await getDoc(codeRef);
+      if (existingDoc.exists()) {
+        throw new Error('This code already exists');
+      }
+
       const selectedPlan = PLANS.find(p => p.id === newCode.planId);
-      await addDoc(collection(db, 'redeemCodes'), {
-        code: newCode.code.toUpperCase(),
+      await setDoc(codeRef, {
+        code: codeId,
         planId: newCode.planId,
         planName: selectedPlan?.name || 'Unknown Plan',
         maxUses: Number(newCode.maxUses),

@@ -24,10 +24,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Sun, Moon, Ticket } from 'lucide-react';
 import { FloatingSupport } from './FloatingSupport';
 import { AdComponent } from './AdComponent';
+import { NotificationPanel } from './NotificationPanel';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { db } from '../firebase/firebase';
 
 export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [hasUnread, setHasUnread] = useState(false);
   const { user, userData } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const location = useLocation();
@@ -45,6 +50,22 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
   ];
 
   const isAdminUser = user && userData?.role === 'admin';
+
+  React.useEffect(() => {
+    if (!user) {
+      setHasUnread(false);
+      return;
+    }
+    const q = query(
+      collection(db, 'notifications'),
+      where('userId', '==', user.uid),
+      where('read', '==', false)
+    );
+    const unsub = onSnapshot(q, (snapshot) => {
+      setHasUnread(!snapshot.empty);
+    });
+    return () => unsub();
+  }, [user]);
 
   if (isAdminUser) {
     navItems.push({ name: 'Admin Panel', icon: LayoutDashboard, path: '/admin' });
@@ -184,16 +205,32 @@ export const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) =>
               {theme === 'dark' ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
             </button>
 
-            <button className={cn(
-              "p-1.5 relative transition-colors",
-              theme === 'dark' ? "text-zinc-400 hover:text-white" : "text-zinc-500 hover:text-zinc-900"
-            )}>
-              <Bell className="w-4 h-4" />
-              <span className={cn(
-                "absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-blue-500 rounded-full border",
-                theme === 'dark' ? "border-black" : "border-white"
-              )} />
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setIsNotificationsOpen(!isNotificationsOpen)}
+                className={cn(
+                  "p-1.5 relative transition-colors",
+                  theme === 'dark' ? "text-zinc-400 hover:text-white" : "text-zinc-500 hover:text-zinc-900"
+                )}
+              >
+                <Bell className="w-4 h-4" />
+                {hasUnread && (
+                  <span className={cn(
+                    "absolute top-1.5 right-1.5 w-1.5 h-1.5 bg-blue-500 rounded-full border",
+                    theme === 'dark' ? "border-black" : "border-white"
+                  )} />
+                )}
+              </button>
+
+              <AnimatePresence>
+                {isNotificationsOpen && (
+                  <>
+                    <div className="fixed inset-0 z-40" onClick={() => setIsNotificationsOpen(false)} />
+                    <NotificationPanel onClose={() => setIsNotificationsOpen(false)} />
+                  </>
+                )}
+              </AnimatePresence>
+            </div>
 
             <div className="relative">
               <button 

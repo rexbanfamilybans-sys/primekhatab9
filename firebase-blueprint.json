@@ -125,6 +125,21 @@
         "createdAt": { "type": "string", "format": "date-time" }
       },
       "required": ["userId", "userName", "text"]
+    },
+    "Notification": {
+      "title": "Notification",
+      "description": "User notifications for subscription status and updates",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "userId": { "type": "string" },
+        "title": { "type": "string" },
+        "message": { "type": "string" },
+        "type": { "type": "string", "enum": ["info", "success", "error", "update"] },
+        "read": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "title", "message", "type", "read"]
     }
   },
   "firestore": {
@@ -163,6 +178,10 @@
     "/settings/{settingId}": {
       "schema": "SupportLinks",
       "description": "Platform settings (telegram, support, etc.)"
+    },
+    "/notifications/{notificationId}": {
+      "schema": "Notification",
+      "description": "User notifications"
     }
   }
 }
