@@ -16,9 +16,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { toast } from 'react-hot-toast';
 import { Link, useNavigate } from 'react-router-dom';
+import { usePlans } from '../hooks/usePlans';
+import { getSubscriptionExpiration } from '../lib/subscriptionUtils';
 
 export const RedeemCode: React.FC = () => {
   const { user, userData } = useAuth();
+  const { plans, loading: plansLoading } = usePlans();
   const navigate = useNavigate();
   const [code, setCode] = useState('');
   const [isRedeeming, setIsRedeeming] = useState(false);
@@ -41,6 +44,8 @@ export const RedeemCode: React.FC = () => {
       }
 
       const codeData = codeSnapshot.data();
+      const selectedPlan = plans.find(p => p.id === codeData.planId);
+      const expirationDate = getSubscriptionExpiration(selectedPlan?.prices.DEFAULT.duration as 'month' | 'year' || 'month');
 
       if (codeData.usedCount >= codeData.maxUses) {
         throw new Error('This code has reached its maximum usage limit');
@@ -63,7 +68,8 @@ export const RedeemCode: React.FC = () => {
         subscription_plan: codeData.planId,
         subscription_status: 'active',
         subscription_method: 'coupon',
-        subscription_updated_at: serverTimestamp()
+        subscription_updated_at: serverTimestamp(),
+        subscription_expiry: expirationDate
       });
 
       await batch.commit();

@@ -6,6 +6,8 @@ import { Check, X, Loader2, Clock, User, CreditCard, ShieldCheck, ShieldAlert, G
 import { toast } from 'react-hot-toast';
 import { cn } from '../lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { usePlans } from '../hooks/usePlans';
+import { getSubscriptionExpiration } from '../lib/subscriptionUtils';
 
 interface Request {
   id: string;
@@ -25,6 +27,7 @@ interface Request {
 
 export const AdminRequests: React.FC = () => {
   const { user, userData } = useAuth();
+  const { plans, loading: plansLoading } = usePlans();
   const [requests, setRequests] = useState<Request[]>([]);
   const [loading, setLoading] = useState(true);
   const [processing, setProcessing] = useState<string | null>(null);
@@ -52,6 +55,9 @@ export const AdminRequests: React.FC = () => {
   const handleAction = async (request: Request, action: 'approved' | 'rejected') => {
     setProcessing(request.id);
     try {
+      const selectedPlan = plans.find(p => p.id === request.planId);
+      const expirationDate = getSubscriptionExpiration(selectedPlan?.prices.DEFAULT.duration as 'month' | 'year' || 'month');
+
       // Update request status
       await updateDoc(doc(db, 'purchaseRequests', request.id), {
         status: action,
@@ -63,7 +69,8 @@ export const AdminRequests: React.FC = () => {
         subscription_status: action === 'approved' ? 'active' : 'rejected',
         subscription_plan: action === 'approved' ? request.planName : 'none',
         subscription_method: action === 'approved' ? 'payment' : 'none',
-        subscription_updated_at: serverTimestamp()
+        subscription_updated_at: serverTimestamp(),
+        subscription_expiry: action === 'approved' ? expirationDate : null
       });
 
       toast.success(`Request ${action} successfully!`);

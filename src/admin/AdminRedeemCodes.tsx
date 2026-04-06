@@ -19,7 +19,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 import { toast } from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { PLANS } from '../constants';
+import { usePlans } from '../hooks/usePlans';
 
 interface RedeemCode {
   id: string;
@@ -34,6 +34,7 @@ interface RedeemCode {
 
 export const AdminRedeemCodes: React.FC = () => {
   const { userData } = useAuth();
+  const { plans, loading: plansLoading } = usePlans();
   const [codes, setCodes] = useState<RedeemCode[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -41,9 +42,15 @@ export const AdminRedeemCodes: React.FC = () => {
   
   const [newCode, setNewCode] = useState({
     code: '',
-    planId: PLANS[0].id,
+    planId: '',
     maxUses: 1
   });
+
+  useEffect(() => {
+    if (plans.length > 0 && !newCode.planId) {
+      setNewCode(prev => ({ ...prev, planId: plans[0].id }));
+    }
+  }, [plans]);
 
   useEffect(() => {
     const isAdmin = userData?.role === 'admin';
@@ -90,7 +97,7 @@ export const AdminRedeemCodes: React.FC = () => {
         throw new Error('This code already exists');
       }
 
-      const selectedPlan = PLANS.find(p => p.id === newCode.planId);
+      const selectedPlan = plans.find(p => p.id === newCode.planId);
       await setDoc(codeRef, {
         code: codeId,
         planId: newCode.planId,
@@ -102,7 +109,7 @@ export const AdminRedeemCodes: React.FC = () => {
       });
       toast.success('Redeem code created successfully!');
       setShowAddModal(false);
-      setNewCode({ code: '', planId: PLANS[0].id, maxUses: 1 });
+      setNewCode({ code: '', planId: plans[0].id, maxUses: 1 });
     } catch (error: any) {
       toast.error('Failed to create code: ' + error.message);
     } finally {
@@ -316,7 +323,7 @@ export const AdminRedeemCodes: React.FC = () => {
                   <div className="space-y-2">
                     <label className="text-[10px] font-black text-zinc-500 uppercase tracking-widest ml-1">Select Plan</label>
                     <div className="grid gap-2">
-                      {PLANS.map((plan) => (
+                      {plans.map((plan) => (
                         <button
                           key={plan.id}
                           type="button"

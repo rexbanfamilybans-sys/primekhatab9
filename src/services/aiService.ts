@@ -1,14 +1,5 @@
-import { GoogleGenAI } from "@google/genai";
-
-const OPENROUTER_API_KEY = import.meta.env.VITE_OPENROUTER_API_KEY || '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';
-const SITE_URL = window.location.origin;
-const SITE_NAME = 'SahidAnime';
-
-const OPENROUTER_MODEL = "google/gemini-2.0-flash-lite-preview-02-05";
-const GEMINI_MODEL = "gemini-3-flash-preview";
-
-// Native Gemini Client
-const genAI = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || '' });
+const AI_API_URL = "https://dewyfiyiqdveqaockzfn.supabase.co/functions/v1/api";
+const DEFAULT_MODEL = "google/gemini-2.5-flash-lite";
 
 export interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
@@ -16,65 +7,37 @@ export interface ChatMessage {
 }
 
 export const chatWithAI = async (messages: ChatMessage[]) => {
-  // Try OpenRouter First
   try {
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const response = await fetch(AI_API_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-        "HTTP-Referer": SITE_URL,
-        "X-OpenRouter-Title": SITE_NAME,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY || ""
       },
       body: JSON.stringify({
-        "model": OPENROUTER_MODEL,
-        "messages": messages
+        "model": DEFAULT_MODEL,
+        "messages": messages.map(m => ({
+          role: m.role === 'assistant' ? 'assistant' : m.role,
+          content: m.content
+        }))
       })
     });
 
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error?.message || `API Error: ${response.status}`);
+    }
+
     const data = await response.json();
     
-    if (data.error) {
-      const errorMessage = data.error.message || 'AI Error';
-      throw new Error(`OpenRouter Error: ${errorMessage}`);
+    if (data.choices && data.choices[0]?.message?.content) {
+      return data.choices[0].message.content;
     }
-
-    if (!data.choices || data.choices.length === 0) {
-      throw new Error("No response from OpenRouter");
-    }
-
-    return data.choices[0].message.content;
-  } catch (openRouterError: any) {
-    console.warn("OpenRouter failed, falling back to native Gemini:", openRouterError.message);
     
-    // Fallback to Native Gemini
-    try {
-      const systemInstruction = messages.find(m => m.role === 'system')?.content as string || '';
-      const chatMessages = messages.filter(m => m.role !== 'system');
-      
-      const lastMessage = chatMessages[chatMessages.length - 1];
-      const history = chatMessages.slice(0, -1).map(m => ({
-        role: m.role === 'assistant' ? 'model' : 'user',
-        parts: [{ text: m.content as string }]
-      }));
-
-      const response = await genAI.models.generateContent({
-        model: GEMINI_MODEL,
-        contents: [
-          ...history.map(h => ({ role: h.role, parts: h.parts })),
-          { role: 'user', parts: [{ text: lastMessage.content as string }] }
-        ],
-        config: {
-          systemInstruction,
-          temperature: 0.7,
-        },
-      });
-
-      return response.text || "I'm sorry, I couldn't generate a response.";
-    } catch (geminiError: any) {
-      console.error("Both OpenRouter and Gemini failed:", geminiError);
-      throw new Error(`AI Error: ${openRouterError.message}. Fallback also failed: ${geminiError.message}`);
-    }
+    return data.content || data.text || (typeof data === 'string' ? data : JSON.stringify(data));
+  } catch (error: any) {
+    console.error("AI Chat Error:", error);
+    throw new Error(`AI Chat Error: ${error.message}`);
   }
 };
 
@@ -98,7 +61,6 @@ export const analyzePaymentScreenshot = async (base64Image: string, planDetails:
     Be extremely strict. If you are unsure, REJECT.
   `;
 
-  // Try OpenRouter First
   try {
     const messages = [
       {
@@ -118,66 +80,31 @@ export const analyzePaymentScreenshot = async (base64Image: string, planDetails:
       }
     ];
 
-    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+    const response = await fetch(AI_API_URL, {
       method: "POST",
       headers: {
-        "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
-        "HTTP-Referer": SITE_URL,
-        "X-OpenRouter-Title": SITE_NAME,
-        "Content-Type": "application/json"
+        "Content-Type": "application/json",
+        "apikey": import.meta.env.VITE_SUPABASE_ANON_KEY || ""
       },
       body: JSON.stringify({
-        "model": OPENROUTER_MODEL,
+        "model": DEFAULT_MODEL,
         "messages": messages
       })
     });
 
+    if (!response.ok) {
+      throw new Error(`API Error: ${response.status}`);
+    }
+
     const data = await response.json();
     
-    if (data.error) {
-      const errorMessage = data.error.message || 'AI Error';
-      throw new Error(`OpenRouter Error: ${errorMessage}`);
+    if (data.choices && data.choices[0]?.message?.content) {
+      return data.choices[0].message.content;
     }
-
-    if (!data.choices || data.choices.length === 0) {
-      throw new Error("No response from OpenRouter");
-    }
-
-    return data.choices[0].message.content;
-  } catch (openRouterError: any) {
-    console.warn("OpenRouter Analysis failed, falling back to native Gemini:", openRouterError.message);
     
-    // Fallback to Native Gemini
-    try {
-      const base64Data = base64Image.includes('base64,') 
-        ? base64Image.split('base64,')[1] 
-        : base64Image;
-
-      const response = await genAI.models.generateContent({
-        model: GEMINI_MODEL,
-        contents: [
-          {
-            role: 'user',
-            parts: [
-              { text: prompt },
-              {
-                inlineData: {
-                  data: base64Data,
-                  mimeType: "image/png"
-                }
-              }
-            ]
-          }
-        ],
-        config: {
-          temperature: 0,
-        }
-      });
-
-      return response.text || "REJECTED: Could not analyze image.";
-    } catch (geminiError: any) {
-      console.error("Both OpenRouter and Gemini Analysis failed:", geminiError);
-      throw new Error(`AI Analysis Error: ${openRouterError.message}. Fallback also failed: ${geminiError.message}`);
-    }
+    return data.content || data.text || (typeof data === 'string' ? data : "REJECTED: Could not analyze image.");
+  } catch (error: any) {
+    console.error("AI Analysis Error:", error);
+    throw new Error(`AI Analysis Error: ${error.message}`);
   }
 };

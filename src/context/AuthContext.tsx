@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, User as FirebaseUser } from 'firebase/auth';
-import { doc, onSnapshot, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, getDoc, updateDoc } from 'firebase/firestore';
 import { auth, db } from '../firebase/firebase';
+import { isSubscriptionExpired } from '../lib/subscriptionUtils';
 
 interface UserData {
   uid: string;
@@ -10,6 +11,7 @@ interface UserData {
   role: 'user' | 'admin';
   subscription_plan: string;
   subscription_status: 'active' | 'pending' | 'rejected' | 'none';
+  subscription_expiry?: any;
   country: string;
 }
 
@@ -42,9 +44,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (firebaseUser) {
         const userDocRef = doc(db, 'users', firebaseUser.uid);
-        unsubDoc = onSnapshot(userDocRef, (docSnap) => {
+        unsubDoc = onSnapshot(userDocRef, async (docSnap) => {
           if (docSnap.exists()) {
             const data = docSnap.data() as UserData;
+            
+            // Check for expiration
+            if (data.subscription_status === 'active' && data.subscription_expiry) {
+              if (isSubscriptionExpired(data.subscription_expiry)) {
+                // Auto-expire subscription
+                await updateDoc(userDocRef, {
+                  subscription_status: 'none',
+                  subscription_plan: 'none'
+                });
+                data.subscription_status = 'none';
+                data.subscription_plan = 'none';
+              }
+            }
+
             // Fail-safe for master admins
             if (firebaseUser.email === 'mrkhatab112@gmail.com' || firebaseUser.email === 'admin@rex.com') {
               data.role = 'admin';

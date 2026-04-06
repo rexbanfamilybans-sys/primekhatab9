@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { cn } from '../lib/utils';
 
 import { chatWithAI, ChatMessage } from '../services/aiService';
-import { PLANS } from '../constants';
+import { usePlans } from '../hooks/usePlans';
 
 interface Message {
   role: 'user' | 'bot';
@@ -16,6 +16,7 @@ interface Message {
 
 export const AIChatbot: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const navigate = useNavigate();
+  const { plans, paymentMethods, loading: plansLoading } = usePlans();
   const [messages, setMessages] = useState<Message[]>([
     { 
       role: 'bot', 
@@ -27,29 +28,35 @@ export const AIChatbot: React.FC<{ onClose: () => void }> = ({ onClose }) => {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Keep track of raw messages for AI context
-  const [aiHistory, setAiHistory] = useState<ChatMessage[]>([
-    {
-      role: 'system',
-      content: `
-        You are SahidAnime AI Assistant. You are helpful, polite, and knowledgeable about the SahidAnime website.
-        Website Details:
-        - Name: SahidAnime
-        - Purpose: Anime streaming platform.
-        - Plans: ${JSON.stringify(PLANS)}
-        - Payment Methods: UPI (India: 8343830288), EasyPaisa/JazzCash (Pakistan: 03475048897), bKash/Nagad (Bangladesh: +8801306984036).
-        - Social Media: WhatsApp (https://whatsapp.com/channel/0029Vahd4QT9Gv7M1esnDz46), Facebook (https://www.facebook.com/SahidAnime4u), Telegram (https://t.me/BTTH_HindiDub).
-        - Special Content: BTTH (Battle Through The Heavens) is a popular series here. Episode 189 and some others are paid content.
-        
-        Capabilities:
-        - You can help users find anime.
-        - You can explain subscription plans.
-        - You can guide users on how to pay and get access.
-        - You should encourage users to join the WhatsApp channel and watch the QNA video (https://youtu.be/Ib5Hoi2r598).
-        
-        Tone: Friendly, professional, and Islamic greeting (Assalamu alaikum).
-      `
+  const [aiHistory, setAiHistory] = useState<ChatMessage[]>([]);
+
+  useEffect(() => {
+    if (!plansLoading) {
+      setAiHistory([
+        {
+          role: 'system',
+          content: `
+            You are SahidAnime AI Assistant. You are helpful, polite, and knowledgeable about the SahidAnime website.
+            Website Details:
+            - Name: SahidAnime
+            - Purpose: Anime streaming platform.
+            - Plans: ${JSON.stringify(plans)}
+            - Payment Methods: ${JSON.stringify(paymentMethods)}
+            - Social Media: WhatsApp (https://whatsapp.com/channel/0029Vahd4QT9Gv7M1esnDz46), Facebook (https://www.facebook.com/SahidAnime4u), Telegram (https://t.me/BTTH_HindiDub).
+            - Special Content: BTTH (Battle Through The Heavens) is a popular series here. Episode 189 and some others are paid content.
+            
+            Capabilities:
+            - You can help users find anime.
+            - You can explain subscription plans.
+            - You can guide users on how to pay and get access.
+            - You should encourage users to join the WhatsApp channel and watch the QNA video (https://youtu.be/Ib5Hoi2r598).
+            
+            Tone: Friendly, professional, and Islamic greeting (Assalamu alaikum).
+          `
+        }
+      ]);
     }
-  ]);
+  }, [plans, paymentMethods, plansLoading]);
 
   useEffect(() => {
     if (scrollRef.current) {

@@ -16,7 +16,7 @@ interface CurrencyInfo {
   rate: number;
 }
 
-import { PLANS, PAYMENT_METHODS } from '../constants';
+import { usePlans } from '../hooks/usePlans';
 
 interface Episode {
   id: string;
@@ -29,6 +29,7 @@ interface Episode {
 export const AnimeDetails: React.FC = () => {
   const { id } = useParams();
   const { userData } = useAuth();
+  const { plans, paymentMethods, loading: plansLoading } = usePlans();
   const { theme } = useTheme();
   const [anime, setAnime] = useState<any>(null);
   const [episodes, setEpisodes] = useState<Episode[]>([]);
@@ -392,19 +393,32 @@ export const AnimeDetails: React.FC = () => {
                 </button>
                 {selectedEpisode?.downloadUrl && (
                   <button 
-                    onClick={handleDownload}
+                    onClick={() => {
+                      if (!isPremium) {
+                        setShowPremiumModal(true);
+                        toast.error('Premium subscription required to download');
+                        return;
+                      }
+                      handleDownload();
+                    }}
                     className="group relative flex items-center gap-3 px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-500 hover:to-emerald-500 text-white rounded-2xl font-black text-sm transition-all active:scale-95 shadow-xl shadow-green-600/20 overflow-hidden"
                   >
                     <div className="absolute -top-1 -right-1 bg-white text-green-600 px-2 py-0.5 rounded-bl-lg text-[8px] font-black tracking-tighter uppercase shadow-sm z-10">
-                      4K Ultra
+                      {isPremium ? '4K Ultra' : <Lock className="w-2 h-2" />}
                     </div>
                     <div className="relative">
-                      <Download className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" />
+                      {isPremium ? (
+                        <Download className="w-5 h-5 group-hover:translate-y-0.5 transition-transform" />
+                      ) : (
+                        <Crown className="w-5 h-5 text-yellow-400" />
+                      )}
                       <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 bg-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity" />
                     </div>
                     <div className="flex flex-col items-start leading-none">
-                      <span className="text-[10px] text-green-100 font-bold uppercase tracking-widest mb-0.5">Direct Link</span>
-                      <span>Download Now</span>
+                      <span className="text-[10px] text-green-100 font-bold uppercase tracking-widest mb-0.5">
+                        {isPremium ? 'Direct Link' : 'Premium Only'}
+                      </span>
+                      <span>{isPremium ? 'Download Now' : 'Unlock Download'}</span>
                     </div>
                   </button>
                 )}
@@ -598,7 +612,7 @@ export const AnimeDetails: React.FC = () => {
                 </div>
 
                 <div className="space-y-3">
-                  {PLANS.map((plan) => {
+                  {plans.map((plan) => {
                     const priceData = plan.prices[countryCode as keyof typeof plan.prices] || plan.prices.DEFAULT;
                     return (
                       <button
@@ -634,15 +648,15 @@ export const AnimeDetails: React.FC = () => {
                   <div className="space-y-3">
                     <div className="flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-wider">
                       <Zap className="w-3.5 h-3.5 fill-current" />
-                      {PAYMENT_METHODS[countryCode]?.method || PAYMENT_METHODS.DEFAULT.method} Details
+                      {(paymentMethods[countryCode] || paymentMethods.DEFAULT)?.method} Details
                     </div>
                     <div className="p-4 bg-white rounded-xl border border-zinc-200 space-y-2 shadow-sm">
                       <div className="text-lg font-black text-zinc-900 select-all text-center tracking-tight">
-                        {PAYMENT_METHODS[countryCode]?.details || PAYMENT_METHODS.DEFAULT.details}
+                        {(paymentMethods[countryCode] || paymentMethods.DEFAULT)?.details}
                       </div>
                       <div className="text-center space-y-0.5">
-                        <p className="text-[10px] text-zinc-500 font-bold">Account: {PAYMENT_METHODS[countryCode]?.name || PAYMENT_METHODS.DEFAULT.name}</p>
-                        <p className="text-[9px] text-blue-600 italic">{PAYMENT_METHODS[countryCode]?.instruction || PAYMENT_METHODS.DEFAULT.instruction}</p>
+                        <p className="text-[10px] text-zinc-500 font-bold">Account: {(paymentMethods[countryCode] || paymentMethods.DEFAULT)?.name}</p>
+                        <p className="text-[9px] text-blue-600 italic">{(paymentMethods[countryCode] || paymentMethods.DEFAULT)?.instruction}</p>
                       </div>
                     </div>
                   </div>

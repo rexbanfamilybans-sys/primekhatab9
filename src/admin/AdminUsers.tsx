@@ -325,6 +325,11 @@ export const AdminUsers: React.FC = () => {
                               <Crown className="w-3 h-3" />
                               {u.subscription_plan || 'Premium'}
                             </div>
+                            {u.subscription_expiry && (
+                              <p className="text-[9px] text-zinc-500 font-bold ml-1">
+                                Expires: {u.subscription_expiry.toDate ? u.subscription_expiry.toDate().toLocaleDateString() : new Date(u.subscription_expiry).toLocaleDateString()}
+                              </p>
+                            )}
                           </div>
                         ) : (
                           <div className="px-2.5 py-1 bg-zinc-800 text-zinc-500 border border-zinc-700 rounded-lg text-[10px] font-black uppercase tracking-widest">

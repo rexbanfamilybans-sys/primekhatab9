@@ -7,12 +7,14 @@ import { cn } from '../lib/utils';
 import { toast } from 'react-hot-toast';
 import { motion, AnimatePresence } from 'framer-motion';
 
-import { PLANS, PAYMENT_METHODS } from '../constants';
+import { usePlans } from '../hooks/usePlans';
 import { sendTelegramNotification } from '../services/telegramService';
 import { analyzePaymentScreenshot } from '../services/aiService';
+import { getSubscriptionExpiration } from '../lib/subscriptionUtils';
 
 export const Premium: React.FC = () => {
   const { userData, user } = useAuth();
+  const { plans, paymentMethods, loading: plansLoading } = usePlans();
   const [countryCode, setCountryCode] = useState('IN');
   const [currency, setCurrency] = useState({ code: 'INR', symbol: '₹' });
   const [selectedPlan, setSelectedPlan] = useState<any>(null);
@@ -81,11 +83,15 @@ export const Premium: React.FC = () => {
         setVerificationStatus('success');
         setAiStatus('Payment Verified! Activating your subscription...');
         
+        const planPrice = selectedPlan.prices[countryCode] || selectedPlan.prices.DEFAULT;
+        const expirationDate = getSubscriptionExpiration(planPrice.duration as 'month' | 'year');
+        
         // 1. Update User Subscription
         await updateDoc(doc(db, 'users', user.uid), {
           subscription_plan: selectedPlan.id,
           subscription_status: 'active',
           subscription_updated_at: serverTimestamp(),
+          subscription_expiry: expirationDate,
           subscription_method: 'ai_auto'
         });
 
@@ -172,6 +178,14 @@ export const Premium: React.FC = () => {
     return plan.prices[countryCode] || plan.prices.DEFAULT;
   };
 
+  if (plansLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <Loader2 className="w-12 h-12 animate-spin text-blue-500" />
+      </div>
+    );
+  }
+
   return (
     <div className="max-w-5xl mx-auto space-y-12 py-8 px-4">
       {/* Header Section */}
@@ -192,7 +206,7 @@ export const Premium: React.FC = () => {
 
       {/* Plans Grid */}
       <div className="grid md:grid-cols-3 gap-6 relative">
-        {PLANS.map((plan) => {
+        {plans.map((plan) => {
           const priceData = getPriceData(plan);
           const isVip = plan.id === 'vip';
           
@@ -291,15 +305,15 @@ export const Premium: React.FC = () => {
               <div className="space-y-3">
                 <div className="flex items-center gap-2 text-blue-600 font-black text-[10px] uppercase tracking-wider">
                   <Zap className="w-3.5 h-3.5 fill-current" />
-                  {PAYMENT_METHODS[countryCode]?.method || PAYMENT_METHODS.DEFAULT.method} Details
+                  {(paymentMethods[countryCode] || paymentMethods.DEFAULT)?.method} Details
                 </div>
                 <div className="p-4 bg-white rounded-xl border border-zinc-200 space-y-2 shadow-sm">
                   <div className="text-lg font-black text-zinc-900 select-all text-center tracking-tight">
-                    {PAYMENT_METHODS[countryCode]?.details || PAYMENT_METHODS.DEFAULT.details}
+                    {(paymentMethods[countryCode] || paymentMethods.DEFAULT)?.details}
                   </div>
                   <div className="text-center space-y-0.5">
-                    <p className="text-[10px] text-zinc-500 font-bold">Account: {PAYMENT_METHODS[countryCode]?.name || PAYMENT_METHODS.DEFAULT.name}</p>
-                    <p className="text-[9px] text-blue-600 italic">{PAYMENT_METHODS[countryCode]?.instruction || PAYMENT_METHODS.DEFAULT.instruction}</p>
+                    <p className="text-[10px] text-zinc-500 font-bold">Account: {(paymentMethods[countryCode] || paymentMethods.DEFAULT)?.name}</p>
+                    <p className="text-[9px] text-blue-600 italic">{(paymentMethods[countryCode] || paymentMethods.DEFAULT)?.instruction}</p>
                   </div>
                 </div>
               </div>
